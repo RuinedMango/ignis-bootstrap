@@ -1,3 +1,10 @@
+.clangd
+.clang-format
+src/bison.bat
+src/flex.bat
+src/lex.yy.c
+src/parse.tab.*
+
 # Xmake cache
 .cache/
 .xmake/

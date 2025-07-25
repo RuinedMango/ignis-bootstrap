@@ -7,3 +7,7 @@ target("ignis-bootstrap")
 set_kind("binary")
 add_files("src/*.c")
 add_packages("libllvm")
+
+if is_plat("windows") then
+	set_runtimes("MT")
+end
