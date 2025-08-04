@@ -10,10 +10,11 @@
 
 "void" { yylval.str = strdup(yytext); return T_TYPE; }
 i[0-9]+ { yylval.str = strdup(yytext); return T_TYPE; }
+u[0-9]+ { yylval.str = strdup(yytext); return T_TYPE; }
 
 [0-9]+\.[0-9]+ { yylval.floatval = strtof(yytext, NULL); return T_FLOAT; }
 [0-9]+ { yylval.intval = strtol(yytext, NULL, 10); return T_INT; }
-[a-zA-Z_][a-zA-Z0-9_]* { yylval.id = strdup(yytext); return T_ID; }
+[a-zA-Z_][a-zA-Z0-9_]* { yylval.str = strdup(yytext); return T_ID; }
 
 "+" return T_PLUS;
 "-" return T_MINUS;

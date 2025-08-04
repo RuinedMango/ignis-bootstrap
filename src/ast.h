@@ -59,6 +59,7 @@ typedef struct ASTNode {
             char* type;
             char* name;
             struct ASTNode* value;
+            int is_signed;
         } vardecl;
         char* varname;
     } u;
@@ -80,16 +81,16 @@ ASTNode* create_return_node(ASTNode* value);
 ASTNode* create_binop_node(char op, ASTNode* l, ASTNode* r);
 ASTNode* create_assign_node(const char* name, ASTNode* value);
 ASTNode* create_var_decl_node(const char* type, const char* name,
-                              ASTNode* value);
+                              ASTNode* value, int is_signed);
 ASTNode* create_con_decl_node(const char* type, const char* name,
-                              ASTNode* value);
+                              ASTNode* value, int is_signed);
 ASTNode* create_id_node(const char* name);
 
 ASTNode* create_list_node(ASTKind kind);
 
 void free_node(ASTNode* e);
 
-void evaluate_and_codegen(ASTNode* e);
+void codegen(ASTNodeList* funcs);
 void init_codegen();
 void finish_codegen();
 

@@ -83,7 +83,7 @@ ASTNode* create_assign_node(const char* name, ASTNode* value) {
     return n;
 }
 ASTNode* create_var_decl_node(const char* type, const char* name,
-                              ASTNode* value) {
+                              ASTNode* value, int is_signed) {
     ASTNode* n = new_node(AST_VAR_DECL);
     size_t len = strlen(type) + 1;
     n->u.vardecl.type = malloc(len);
@@ -92,10 +92,11 @@ ASTNode* create_var_decl_node(const char* type, const char* name,
     n->u.vardecl.name = malloc(len);
     memcpy(n->u.vardecl.name, name, len);
     n->u.vardecl.value = value;
+    n->u.vardecl.is_signed = is_signed;
     return n;
 }
 ASTNode* create_con_decl_node(const char* type, const char* name,
-                              ASTNode* value) {
+                              ASTNode* value, int is_signed) {
     ASTNode* n = new_node(AST_CON_DECL);
     size_t len = strlen(type) + 1;
     n->u.vardecl.type = malloc(len);
@@ -104,6 +105,7 @@ ASTNode* create_con_decl_node(const char* type, const char* name,
     n->u.vardecl.name = malloc(len);
     memcpy(n->u.vardecl.name, name, len);
     n->u.vardecl.value = value;
+    n->u.vardecl.is_signed = is_signed;
     return n;
 }
 ASTNode* create_id_node(const char* name) {
