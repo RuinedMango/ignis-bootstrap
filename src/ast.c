@@ -1,4 +1,5 @@
 #include "ast.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -39,13 +40,27 @@ ASTNode* create_float_node(float f) {
     return n;
 }
 
-ASTNode* create_fn_node(const char* ret_type, const char* name,
+ASTNode* create_type_node(const char* type) {
+    ASTNode* n = new_node(AST_TYPE);
+    size_t len = strlen(type) + 1;
+    n->u.type = malloc(len);
+    memcpy(n->u.type, type, len);
+    return n;
+}
+ASTNode* create_array_type_node(const char* base_type, int size) {
+    ASTNode* n = new_node(AST_ARRAY_TYPE);
+    size_t len = strlen(base_type) + 1;
+    n->u.arraytype.base_type = malloc(len);
+    memcpy(n->u.arraytype.base_type, base_type, len);
+    n->u.arraytype.size = size;
+    return n;
+}
+
+ASTNode* create_fn_node(ASTNode* ret_type, const char* name,
                         ASTNodeList* params, ASTNodeList* body) {
     ASTNode* n = new_node(AST_FN);
-    size_t len = strlen(ret_type) + 1;
-    n->u.fn.rettype = malloc(len);
-    memcpy(n->u.fn.rettype, ret_type, len);
-    len = strlen(name) + 1;
+    n->u.fn.rettype = ret_type;
+    size_t len = strlen(name) + 1;
     n->u.fn.name = malloc(len);
     memcpy(n->u.fn.name, name, len);
     n->u.fn.params = params;
@@ -82,26 +97,22 @@ ASTNode* create_assign_node(const char* name, ASTNode* value) {
     n->u.assign.value = value;
     return n;
 }
-ASTNode* create_var_decl_node(const char* type, const char* name,
-                              ASTNode* value, int is_signed) {
+ASTNode* create_var_decl_node(ASTNode* type, const char* name, ASTNode* value,
+                              int is_signed) {
     ASTNode* n = new_node(AST_VAR_DECL);
-    size_t len = strlen(type) + 1;
-    n->u.vardecl.type = malloc(len);
-    memcpy(n->u.vardecl.type, type, len);
-    len = strlen(name) + 1;
+    n->u.vardecl.type = type;
+    size_t len = strlen(name) + 1;
     n->u.vardecl.name = malloc(len);
     memcpy(n->u.vardecl.name, name, len);
     n->u.vardecl.value = value;
     n->u.vardecl.is_signed = is_signed;
     return n;
 }
-ASTNode* create_con_decl_node(const char* type, const char* name,
-                              ASTNode* value, int is_signed) {
+ASTNode* create_con_decl_node(ASTNode* type, const char* name, ASTNode* value,
+                              int is_signed) {
     ASTNode* n = new_node(AST_CON_DECL);
-    size_t len = strlen(type) + 1;
-    n->u.vardecl.type = malloc(len);
-    memcpy(n->u.vardecl.type, type, len);
-    len = strlen(name) + 1;
+    n->u.vardecl.type = type;
+    size_t len = strlen(name) + 1;
     n->u.vardecl.name = malloc(len);
     memcpy(n->u.vardecl.name, name, len);
     n->u.vardecl.value = value;
@@ -116,7 +127,17 @@ ASTNode* create_id_node(const char* name) {
     return n;
 }
 
-ASTNode* create_list_node(ASTKind kind) { return new_node(kind); }
+ASTNode* create_array_literal_node(ASTNodeList* elements) {
+    ASTNode* n = new_node(AST_ARRAY_LITERAL);
+    n->u.arraylit.elements = elements;
+    return n;
+}
+ASTNode* create_array_index_node(ASTNode* array, ASTNode* index) {
+    ASTNode* n = new_node(AST_ARRAY_INDEX);
+    n->u.arrayindex.array = array;
+    n->u.arrayindex.index = index;
+    return n;
+}
 
 void free_node(ASTNode* e) {
     if (!e)
@@ -125,6 +146,13 @@ void free_node(ASTNode* e) {
         case AST_INT:
             break;
         case AST_FLOAT:
+            break;
+
+        case AST_TYPE:
+            free(e->u.type);
+            break;
+        case AST_ARRAY_TYPE:
+            free(e->u.arraytype.base_type);
             break;
 
         case AST_FN_CALL:
@@ -153,6 +181,10 @@ void free_node(ASTNode* e) {
             break;
         case AST_ID:
             free(e->u.varname);
+            break;
+
+        case AST_ARRAY_LITERAL:
+            free_node_list(e->u.arraylit.elements);
             break;
         default:
             break;

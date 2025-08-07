@@ -25,10 +25,14 @@ u[0-9]+ { yylval.str = strdup(yytext); return T_TYPE; }
 ";" return T_SEMI;
 ":" return T_COLON;
 "," return T_COMMA;
+"'" return T_QUOTE;
+"\"" return T_DOUBLE_QUOTE;
 "(" return T_LPAREN;
 ")" return T_RPAREN;
 "{" return T_LBRACE;
 "}" return T_RBRACE;
+"[" return T_LBRACKET;
+"]" return T_RBRACKET;
 
 [ \t\n]+ ;
 . return yytext[0];

@@ -102,6 +102,11 @@ LLVMTypeRef typeSwatch(char* type) {
     return NULL;
 }
 
+LLVMTypeRef arrayTypeHandler(ASTNode* arrayType) {
+    return LLVMArrayType(typeSwatch(arrayType->u.arraytype.base_type),
+                         arrayType->u.arraytype.size);
+}
+
 LLVMValueRef autocast(LLVMValueRef value, LLVMTypeRef from, LLVMTypeRef to) {
     if (from == to)
         return value;
@@ -110,6 +115,9 @@ LLVMValueRef autocast(LLVMValueRef value, LLVMTypeRef from, LLVMTypeRef to) {
         LLVMGetTypeKind(to) == LLVMIntegerTypeKind) {
         return LLVMBuildIntCast(builder, value, to, "casttmp");
     }
+
+    fprintf(stderr, "(%s):(%s)", LLVMPrintTypeToString(from),
+            LLVMPrintTypeToString(to));
 
     fprintf(stderr, "Unsupported autocast\n");
     exit(1);
@@ -195,7 +203,13 @@ LLVMValueRef codegen_expr(ASTNode* e) {
         }
         case AST_VAR_DECL:
         case AST_CON_DECL: {
-            LLVMTypeRef decl_type = typeSwatch(e->u.vardecl.type);
+            LLVMTypeRef decl_type = NULL;
+            if (e->u.vardecl.type->kind == AST_TYPE) {
+                decl_type = typeSwatch(e->u.vardecl.type->u.type);
+            } else if (e->u.vardecl.type->kind == AST_ARRAY_TYPE) {
+                decl_type = arrayTypeHandler(e->u.vardecl.type);
+            }
+
             LLVMValueRef init = codegen_expr(e->u.vardecl.value);
             init = autocast(init, LLVMTypeOf(init), decl_type);
             if (!init) {
@@ -218,6 +232,36 @@ LLVMValueRef codegen_expr(ASTNode* e) {
             }
             return LLVMBuildLoad2(builder, var->type, var->value, e->u.varname);
         }
+        case AST_ARRAY_LITERAL: {
+            int n = e->u.arraylit.elements->count;
+            LLVMValueRef* vals = malloc(sizeof(LLVMValueRef) * n);
+            vals[0] = codegen_expr(e->u.arraylit.elements->nodes[0]);
+            LLVMTypeRef elem_ty = LLVMTypeOf(vals[0]);
+            for (int i = 1; i < n; i++) {
+                LLVMValueRef value =
+                    codegen_expr(e->u.arraylit.elements->nodes[i]);
+                vals[i] = autocast(value, LLVMTypeOf(value), elem_ty);
+            }
+            LLVMValueRef arr = LLVMConstArray(elem_ty, vals, n);
+            free(vals);
+            return arr;
+        }
+        case AST_ARRAY_INDEX: {
+            ValueType* vt = symbol_get(
+                e->u.arrayindex.array->u.varname); // assume it's a variable ID
+            LLVMValueRef array_ptr = vt->value;
+            LLVMTypeRef array_ty = vt->type;
+
+            LLVMValueRef idx = codegen_expr(e->u.arrayindex.index);
+
+            LLVMValueRef zero = LLVMConstInt(int32_type, 0, 0);
+            LLVMValueRef indices[2] = {zero, idx};
+
+            LLVMValueRef gep = LLVMBuildInBoundsGEP2(
+                builder, array_ty, array_ptr, indices, 2, "elem_ptr");
+            return LLVMBuildLoad2(builder, LLVMGetElementType(array_ty), gep,
+                                  "elem_val");
+        }
         default: {
             break;
         }
@@ -230,11 +274,27 @@ LLVMValueRef declare_func(ASTNode* fn) {
 
     LLVMTypeRef* param_types = malloc(sizeof(LLVMTypeRef) * param_count);
     for (int i = 0; i < param_count; i++) {
-        param_types[i] = typeSwatch(fn->u.fn.params->nodes[i]->u.vardecl.type);
+        LLVMTypeRef decl_type = NULL;
+        if (fn->u.fn.params->nodes[i]->u.vardecl.type->kind == AST_TYPE) {
+            decl_type =
+                typeSwatch(fn->u.fn.params->nodes[i]->u.vardecl.type->u.type);
+        } else if (fn->u.fn.params->nodes[i]->u.vardecl.type->kind ==
+                   AST_ARRAY_TYPE) {
+            decl_type =
+                arrayTypeHandler(fn->u.fn.params->nodes[i]->u.vardecl.type);
+        }
+        param_types[i] = decl_type;
     }
 
-    LLVMTypeRef func_type = LLVMFunctionType(typeSwatch(fn->u.fn.rettype),
-                                             param_types, param_count, 0);
+    LLVMTypeRef decl_type = NULL;
+    if (fn->u.fn.rettype->kind == AST_TYPE) {
+        decl_type = typeSwatch(fn->u.fn.rettype->u.type);
+    } else if (fn->u.fn.rettype->kind == AST_ARRAY_TYPE) {
+        decl_type = arrayTypeHandler(fn->u.fn.rettype);
+    }
+
+    LLVMTypeRef func_type =
+        LLVMFunctionType(decl_type, param_types, param_count, 0);
 
     LLVMValueRef function = LLVMAddFunction(mod, fn->u.fn.name, func_type);
     symbol_put(fn->u.fn.name, function, func_type, 0);
@@ -259,12 +319,19 @@ void codegen_func_body(ASTNode* fn) {
     for (int i = 0; i < param_count; i++) {
         ASTNode* param = fn->u.fn.params->nodes[i];
         LLVMValueRef value = LLVMGetParam(function, i);
-        LLVMValueRef alloc = LLVMBuildAlloca(
-            builder, typeSwatch(fn->u.fn.params->nodes[i]->u.vardecl.type),
-            param->u.vardecl.name);
+        LLVMTypeRef decl_type = NULL;
+        if (fn->u.fn.params->nodes[i]->u.vardecl.type->kind == AST_TYPE) {
+            decl_type =
+                typeSwatch(fn->u.fn.params->nodes[i]->u.vardecl.type->u.type);
+        } else if (fn->u.fn.params->nodes[i]->u.vardecl.type->kind ==
+                   AST_ARRAY_TYPE) {
+            decl_type =
+                arrayTypeHandler(fn->u.fn.params->nodes[i]->u.vardecl.type);
+        }
+        LLVMValueRef alloc =
+            LLVMBuildAlloca(builder, decl_type, param->u.vardecl.name);
         LLVMBuildStore(builder, value, alloc);
-        symbol_put(param->u.vardecl.name, alloc,
-                   typeSwatch(fn->u.fn.params->nodes[i]->u.vardecl.type), 0);
+        symbol_put(param->u.vardecl.name, alloc, decl_type, 0);
     }
 
     for (int i = 0; i < fn->u.fn.body->count; i++) {

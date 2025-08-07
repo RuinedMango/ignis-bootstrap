@@ -18,11 +18,11 @@
 %token <str> T_ID T_TYPE
 
 %token T_FN T_VAR T_CON T_RETURN
-%token T_ASSIGN T_COMMA T_COLON T_SEMI T_LPAREN T_RPAREN T_LBRACE T_RBRACE
+%token T_ASSIGN T_COMMA T_COLON T_SEMI T_LPAREN T_RPAREN T_LBRACE T_RBRACE T_LBRACKET T_RBRACKET
 %token T_PLUS T_MINUS T_MUL T_DIV
 
-%type <nodelist> functions param_list arg_list stmts
-%type <node> program function param stmt expr
+%type <nodelist> functions param_list expr_list stmts
+%type <node> program function param stmt expr type array_literal
 
 %left T_PLUS T_MINUS
 %left T_MUL T_DIV
@@ -41,7 +41,7 @@ functions:
 		 ;
 
 function:
-		T_FN T_TYPE T_COLON T_ID T_LPAREN param_list T_RPAREN T_LBRACE stmts T_RBRACE { $$ = create_fn_node($2, $4, $6, $9); free($2); free($4); }
+		T_FN type T_COLON T_ID T_LPAREN param_list T_RPAREN T_LBRACE stmts T_RBRACE { $$ = create_fn_node($2, $4, $6, $9); free($4); }
 		;
 
 param_list:
@@ -50,8 +50,13 @@ param_list:
 		  | param_list T_COMMA param { node_list_add($1, $3); $$ = $1; }
 		  ;
 param:
-	 T_TYPE T_COLON T_ID { $$ = create_var_decl_node($1, $3, NULL, (strstr($1, "u") != NULL) ? 1 : 0); free($1); free($3); }
+	 type T_COLON T_ID { $$ = create_var_decl_node($1, $3, NULL, (strstr($1->u.type, "u") != NULL) ? 1 : 0); free($3); }
 	 ;
+
+type:
+	T_TYPE { $$ = create_type_node($1); }
+	| T_LBRACKET T_INT T_RBRACKET T_TYPE { $$ = create_array_type_node($4, $2); }
+	;
 
 stmts:
 	 { $$ = create_node_list(); }
@@ -59,8 +64,8 @@ stmts:
 	 ;
 
 stmt:
-	T_VAR T_TYPE T_COLON T_ID T_ASSIGN expr T_SEMI { $$ = create_var_decl_node($2, $4, $6, (strstr($2, "u") != NULL) ? 1 : 0); free($2); free($4); }
-	| T_CON T_TYPE T_COLON T_ID T_ASSIGN expr T_SEMI { $$ = create_con_decl_node($2, $4, $6, (strstr($2, "u") != NULL) ? 1 : 0); free($2); free($4); }
+	T_VAR type T_COLON T_ID T_ASSIGN expr T_SEMI { $$ = create_var_decl_node($2, $4, $6, (strstr($2->u.type, "u") != NULL) ? 1 : 0); free($4); }
+	| T_CON type T_COLON T_ID T_ASSIGN expr T_SEMI { $$ = create_con_decl_node($2, $4, $6, (strstr($2->u.type, "u") != NULL) ? 1 : 0); free($4); }
 	| T_ID T_ASSIGN expr T_SEMI { $$ = create_assign_node($1, $3); free($1); }
 	| T_RETURN expr T_SEMI { $$ = create_return_node($2); }
 	;
@@ -73,11 +78,18 @@ expr:
 	| expr T_MINUS expr { $$ = create_binop_node('-', $1, $3); }
 	| expr T_MUL expr { $$ = create_binop_node('*', $1, $3); }
 	| expr T_DIV expr { $$ = create_binop_node('/', $1, $3); }
-	| T_ID T_LPAREN arg_list T_RPAREN { $$ = create_fn_call_node($1, $3); }
+	| T_ID T_LPAREN expr_list T_RPAREN { $$ = create_fn_call_node($1, $3); }
+	| expr T_LBRACKET expr T_RBRACKET { $$ = create_array_index_node($1, $3); }
+	| array_literal { $$ = $1; }
 	;
 
-arg_list:
+array_literal:
+			 T_LBRACE expr_list T_RBRACE { $$ = create_array_literal_node($2); }
+			 ;
+
+expr_list:
 		{ $$ = create_node_list(); }
 		| expr { $$ = create_node_list(); node_list_add($$, $1); }
-		| arg_list T_COMMA expr { node_list_add($1, $3); $$ = $1; }
+		| expr_list T_COMMA expr { node_list_add($1, $3); $$ = $1; }
+		;
 %%
