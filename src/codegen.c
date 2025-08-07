@@ -297,6 +297,12 @@ LLVMValueRef declare_func(ASTNode* fn) {
         LLVMFunctionType(decl_type, param_types, param_count, 0);
 
     LLVMValueRef function = LLVMAddFunction(mod, fn->u.fn.name, func_type);
+    if (strcmp(fn->u.fn.callconv, "cdecl") == 0) {
+        LLVMSetFunctionCallConv(function, LLVMCCallConv);
+    } else if (strcmp(fn->u.fn.callconv, "fastcall") == 0) {
+        LLVMSetFunctionCallConv(function, LLVMFastCallConv);
+    }
+
     symbol_put(fn->u.fn.name, function, func_type, 0);
     free(param_types);
     return function;

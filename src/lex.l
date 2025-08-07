@@ -7,6 +7,11 @@
 "var" return T_VAR;
 "con" return T_CON;
 "return" return T_RETURN;
+"cdecl" { yylval.str = strdup(yytext); return T_CDECL; }
+"stdcall" { yylval.str = strdup(yytext); return T_STDCALL; }
+"fastcall" { yylval.str = strdup(yytext); return T_FASTCALL; }
+"thiscall" { yylval.str = strdup(yytext); return T_THISCALL; }
+"vectorcall" { yylval.str = strdup(yytext); return T_VECTORCALL; }
 
 "void" { yylval.str = strdup(yytext); return T_TYPE; }
 i[0-9]+ { yylval.str = strdup(yytext); return T_TYPE; }
@@ -26,7 +31,7 @@ u[0-9]+ { yylval.str = strdup(yytext); return T_TYPE; }
 ":" return T_COLON;
 "," return T_COMMA;
 "'" return T_QUOTE;
-"\"" return T_DOUBLE_QUOTE;
+"\"" return T_DQUOTE;
 "(" return T_LPAREN;
 ")" return T_RPAREN;
 "{" return T_LBRACE;

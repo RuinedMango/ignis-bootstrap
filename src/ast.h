@@ -47,6 +47,7 @@ typedef struct ASTNode {
             char* name;
             ASTNodeList* params;
             ASTNodeList* body;
+            char* callconv;
         } fn;
         struct {
             char* name;
@@ -92,7 +93,8 @@ ASTNode* create_type_node(const char* type);
 ASTNode* create_array_type_node(const char* base_type, int size);
 
 ASTNode* create_fn_node(ASTNode* ret_type, const char* name,
-                        ASTNodeList* params, ASTNodeList* body);
+                        ASTNodeList* params, ASTNodeList* body,
+                        const char* callconv);
 ASTNode* create_fn_call_node(const char* name, ASTNodeList* args);
 
 ASTNode* create_return_node(ASTNode* value);

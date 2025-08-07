@@ -18,9 +18,11 @@
 %token <str> T_ID T_TYPE
 
 %token T_FN T_VAR T_CON T_RETURN
-%token T_ASSIGN T_COMMA T_COLON T_SEMI T_LPAREN T_RPAREN T_LBRACE T_RBRACE T_LBRACKET T_RBRACKET
+%token <str> T_CDECL T_STDCALL T_FASTCALL T_THISCALL T_VECTORCALL
+%token T_ASSIGN T_COMMA T_COLON T_QUOTE T_DQUOTE T_SEMI T_LPAREN T_RPAREN T_LBRACE T_RBRACE T_LBRACKET T_RBRACKET
 %token T_PLUS T_MINUS T_MUL T_DIV
 
+%type <str> callconv
 %type <nodelist> functions param_list expr_list stmts
 %type <node> program function param stmt expr type array_literal
 
@@ -41,7 +43,16 @@ functions:
 		 ;
 
 function:
-		T_FN type T_COLON T_ID T_LPAREN param_list T_RPAREN T_LBRACE stmts T_RBRACE { $$ = create_fn_node($2, $4, $6, $9); free($4); }
+		T_FN type T_COLON T_ID T_LPAREN param_list T_RPAREN T_LBRACE stmts T_RBRACE { $$ = create_fn_node($2, $4, $6, $9, "cdecl"); free($4); }
+		| T_FN type T_COLON T_ID T_LPAREN param_list T_RPAREN callconv T_LBRACE stmts T_RBRACE { $$ = create_fn_node($2, $4, $6, $10, $8); free($4); }
+		;
+
+callconv:
+		T_CDECL { $$ = $1; }
+		| T_STDCALL { $$ = $1; }
+		| T_FASTCALL { $$ = $1; }
+		| T_THISCALL { $$ = $1; }
+		| T_VECTORCALL { $$ = $1; }
 		;
 
 param_list:

@@ -57,7 +57,8 @@ ASTNode* create_array_type_node(const char* base_type, int size) {
 }
 
 ASTNode* create_fn_node(ASTNode* ret_type, const char* name,
-                        ASTNodeList* params, ASTNodeList* body) {
+                        ASTNodeList* params, ASTNodeList* body,
+                        const char* callconv) {
     ASTNode* n = new_node(AST_FN);
     n->u.fn.rettype = ret_type;
     size_t len = strlen(name) + 1;
@@ -65,6 +66,9 @@ ASTNode* create_fn_node(ASTNode* ret_type, const char* name,
     memcpy(n->u.fn.name, name, len);
     n->u.fn.params = params;
     n->u.fn.body = body;
+    len = strlen(callconv) + 1;
+    n->u.fn.callconv = malloc(len);
+    memcpy(n->u.fn.callconv, callconv, len);
     return n;
 }
 ASTNode* create_fn_call_node(const char* name, ASTNodeList* args) {
