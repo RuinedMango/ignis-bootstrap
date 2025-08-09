@@ -211,6 +211,30 @@ LLVMValueRef codegen_expr(ASTNode* e) {
                     return LLVMBuildSDiv(builder, l, r, "divtmp");
             }
         }
+        case AST_IF: {
+            LLVMValueRef condv = codegen_expr(e->u.ifstmt.cond);
+
+            LLVMBasicBlockRef cur_block = LLVMGetInsertBlock(builder);
+            LLVMValueRef cur_fn = LLVMGetBasicBlockParent(cur_block);
+
+            LLVMBasicBlockRef then_bb =
+                LLVMAppendBasicBlockInContext(ctx, cur_fn, "if.then");
+            LLVMBasicBlockRef merge_bb =
+                LLVMAppendBasicBlockInContext(ctx, cur_fn, "if.end");
+
+            LLVMBuildCondBr(builder, condv, then_bb, merge_bb);
+
+            LLVMPositionBuilderAtEnd(builder, then_bb);
+            for (int i = 0; i < e->u.ifstmt.body->count; i++) {
+                codegen_expr(e->u.ifstmt.body->nodes[i]);
+            }
+            if (!LLVMGetBasicBlockTerminator(LLVMGetInsertBlock(builder))) {
+                LLVMBuildBr(builder, merge_bb);
+            }
+
+            LLVMPositionBuilderAtEnd(builder, merge_bb);
+            return NULL;
+        }
         case AST_ASSIGN: {
             ValueType* var = symbol_get(e->u.assign.name);
             if (!var) {

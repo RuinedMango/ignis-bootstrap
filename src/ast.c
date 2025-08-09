@@ -96,6 +96,13 @@ ASTNode* create_ge_node(ASTNode* lhs, ASTNode* rhs) {
     return n;
 }
 
+ASTNode* create_if_node(ASTNode* cond, ASTNodeList* body) {
+    ASTNode* n = new_node(AST_IF);
+    n->u.ifstmt.cond = cond;
+    n->u.ifstmt.body = body;
+    return n;
+}
+
 ASTNode* create_fn_node(ASTNode* ret_type, const char* name,
                         ASTNodeList* params, ASTNodeList* body,
                         const char* callconv) {
