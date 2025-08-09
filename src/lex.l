@@ -26,6 +26,9 @@ u[0-9]+ { yylval.str = strdup(yytext); return T_TYPE; }
 "*" return T_MUL;
 "/" return T_DIV;
 
+"&" return T_AMPERSAND;
+"." return T_DOT;
+
 "=" return T_ASSIGN;
 ";" return T_SEMI;
 ":" return T_COLON;

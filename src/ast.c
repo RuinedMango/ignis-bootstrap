@@ -47,12 +47,15 @@ ASTNode* create_type_node(const char* type) {
     memcpy(n->u.type, type, len);
     return n;
 }
-ASTNode* create_array_type_node(const char* base_type, int size) {
+ASTNode* create_array_type_node(ASTNode* base_type, int size) {
     ASTNode* n = new_node(AST_ARRAY_TYPE);
-    size_t len = strlen(base_type) + 1;
-    n->u.arraytype.base_type = malloc(len);
-    memcpy(n->u.arraytype.base_type, base_type, len);
+    n->u.arraytype.base_type = base_type;
     n->u.arraytype.size = size;
+    return n;
+}
+ASTNode* create_ptr_type_node(ASTNode* base_type) {
+    ASTNode* n = new_node(AST_PTR_TYPE);
+    n->u.ptrtype.base_type = base_type;
     return n;
 }
 
@@ -128,6 +131,21 @@ ASTNode* create_id_node(const char* name) {
     size_t len = strlen(name) + 1;
     n->u.varname = malloc(len);
     memcpy(n->u.varname, name, len);
+    return n;
+}
+
+ASTNode* create_address_of_node(const char* id) {
+    ASTNode* n = new_node(AST_ADDRESS_OF);
+    size_t len = strlen(id) + 1;
+    n->u.addressof.id = malloc(len);
+    memcpy(n->u.addressof.id, id, len);
+    return n;
+}
+ASTNode* create_dereference_node(const char* id) {
+    ASTNode* n = new_node(AST_DEREFERENCE);
+    size_t len = strlen(id) + 1;
+    n->u.dereference.id = malloc(len);
+    memcpy(n->u.dereference.id, id, len);
     return n;
 }
 

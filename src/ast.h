@@ -7,6 +7,7 @@ typedef enum {
 
     AST_TYPE,
     AST_ARRAY_TYPE,
+    AST_PTR_TYPE,
 
     AST_FN,
     AST_FN_CALL,
@@ -18,6 +19,9 @@ typedef enum {
     AST_VAR_DECL,
     AST_CON_DECL,
     AST_ID,
+
+    AST_ADDRESS_OF,
+    AST_DEREFERENCE,
 
     AST_ARRAY_LITERAL,
     AST_ARRAY_INDEX
@@ -38,9 +42,12 @@ typedef struct ASTNode {
 
         char* type;
         struct {
-            char* base_type;
+            struct ASTNode* base_type;
             int size;
         } arraytype;
+        struct {
+            struct ASTNode* base_type;
+        } ptrtype;
 
         struct {
             struct ASTNode* rettype;
@@ -73,6 +80,13 @@ typedef struct ASTNode {
         char* varname;
 
         struct {
+            char* id;
+        } addressof;
+        struct {
+            char* id;
+        } dereference;
+
+        struct {
             ASTNodeList* elements;
         } arraylit;
         struct {
@@ -90,7 +104,8 @@ ASTNode* create_int_node(int v);
 ASTNode* create_float_node(float f);
 
 ASTNode* create_type_node(const char* type);
-ASTNode* create_array_type_node(const char* base_type, int size);
+ASTNode* create_array_type_node(ASTNode* base_type, int size);
+ASTNode* create_ptr_type_node(ASTNode* base_type);
 
 ASTNode* create_fn_node(ASTNode* ret_type, const char* name,
                         ASTNodeList* params, ASTNodeList* body,
@@ -106,6 +121,9 @@ ASTNode* create_var_decl_node(ASTNode* type, const char* name, ASTNode* value,
 ASTNode* create_con_decl_node(ASTNode* type, const char* name, ASTNode* value,
                               int is_signed);
 ASTNode* create_id_node(const char* name);
+
+ASTNode* create_address_of_node(const char* id);
+ASTNode* create_dereference_node(const char* id);
 
 ASTNode* create_array_literal_node(ASTNodeList* elements);
 ASTNode* create_array_index_node(ASTNode* array, ASTNode* index);

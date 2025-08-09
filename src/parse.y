@@ -19,7 +19,7 @@
 
 %token T_FN T_VAR T_CON T_RETURN
 %token <str> T_CDECL T_STDCALL T_FASTCALL T_THISCALL T_VECTORCALL
-%token T_ASSIGN T_COMMA T_COLON T_QUOTE T_DQUOTE T_SEMI T_LPAREN T_RPAREN T_LBRACE T_RBRACE T_LBRACKET T_RBRACKET
+%token T_AMPERSAND T_DOT T_ASSIGN T_COMMA T_COLON T_QUOTE T_DQUOTE T_SEMI T_LPAREN T_RPAREN T_LBRACE T_RBRACE T_LBRACKET T_RBRACKET
 %token T_PLUS T_MINUS T_MUL T_DIV
 
 %type <str> callconv
@@ -66,7 +66,8 @@ param:
 
 type:
 	T_TYPE { $$ = create_type_node($1); }
-	| T_LBRACKET T_INT T_RBRACKET T_TYPE { $$ = create_array_type_node($4, $2); }
+	| T_LBRACKET T_INT T_RBRACKET type { $$ = create_array_type_node($4, $2); }
+	| T_MUL type { $$ = create_ptr_type_node($2); }
 	;
 
 stmts:
@@ -91,6 +92,8 @@ expr:
 	| expr T_DIV expr { $$ = create_binop_node('/', $1, $3); }
 	| T_ID T_LPAREN expr_list T_RPAREN { $$ = create_fn_call_node($1, $3); }
 	| expr T_LBRACKET expr T_RBRACKET { $$ = create_array_index_node($1, $3); }
+	| T_AMPERSAND T_ID { $$ = create_address_of_node($2); }
+	| T_ID T_DOT T_MUL { $$ = create_dereference_node($1); }
 	| array_literal { $$ = $1; }
 	;
 
