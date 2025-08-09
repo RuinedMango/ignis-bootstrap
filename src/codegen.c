@@ -309,6 +309,36 @@ LLVMValueRef codegen_expr(ASTNode* e) {
             return LLVMBuildLoad2(builder, LLVMGetElementType(array_ty), gep,
                                   "elem_val");
         }
+        case AST_EQ: {
+            return LLVMBuildICmp(builder, LLVMIntEQ,
+                                 codegen_expr(e->u.comp.lhs),
+                                 codegen_expr(e->u.comp.rhs), "cmpeq");
+        }
+        case AST_NE: {
+            return LLVMBuildICmp(builder, LLVMIntNE,
+                                 codegen_expr(e->u.comp.lhs),
+                                 codegen_expr(e->u.comp.rhs), "cmpne");
+        }
+        case AST_LT: {
+            return LLVMBuildICmp(builder, LLVMIntSLT,
+                                 codegen_expr(e->u.comp.lhs),
+                                 codegen_expr(e->u.comp.rhs), "cmplt");
+        }
+        case AST_LE: {
+            return LLVMBuildICmp(builder, LLVMIntSLE,
+                                 codegen_expr(e->u.comp.lhs),
+                                 codegen_expr(e->u.comp.rhs), "cmple");
+        }
+        case AST_GT: {
+            return LLVMBuildICmp(builder, LLVMIntSGT,
+                                 codegen_expr(e->u.comp.lhs),
+                                 codegen_expr(e->u.comp.rhs), "cmpgt");
+        }
+        case AST_GE: {
+            return LLVMBuildICmp(builder, LLVMIntSGE,
+                                 codegen_expr(e->u.comp.lhs),
+                                 codegen_expr(e->u.comp.rhs), "cmpge");
+        }
         default: {
             break;
         }

@@ -59,6 +59,43 @@ ASTNode* create_ptr_type_node(ASTNode* base_type) {
     return n;
 }
 
+ASTNode* create_eq_node(ASTNode* lhs, ASTNode* rhs) {
+    ASTNode* n = new_node(AST_EQ);
+    n->u.comp.lhs = lhs;
+    n->u.comp.rhs = rhs;
+    return n;
+}
+ASTNode* create_ne_node(ASTNode* lhs, ASTNode* rhs) {
+    ASTNode* n = new_node(AST_NE);
+    n->u.comp.lhs = lhs;
+    n->u.comp.rhs = rhs;
+    return n;
+}
+ASTNode* create_lt_node(ASTNode* lhs, ASTNode* rhs) {
+    ASTNode* n = new_node(AST_LT);
+    n->u.comp.lhs = lhs;
+    n->u.comp.rhs = rhs;
+    return n;
+}
+ASTNode* create_le_node(ASTNode* lhs, ASTNode* rhs) {
+    ASTNode* n = new_node(AST_LE);
+    n->u.comp.lhs = lhs;
+    n->u.comp.rhs = rhs;
+    return n;
+}
+ASTNode* create_gt_node(ASTNode* lhs, ASTNode* rhs) {
+    ASTNode* n = new_node(AST_GT);
+    n->u.comp.lhs = lhs;
+    n->u.comp.rhs = rhs;
+    return n;
+}
+ASTNode* create_ge_node(ASTNode* lhs, ASTNode* rhs) {
+    ASTNode* n = new_node(AST_GE);
+    n->u.comp.lhs = lhs;
+    n->u.comp.rhs = rhs;
+    return n;
+}
+
 ASTNode* create_fn_node(ASTNode* ret_type, const char* name,
                         ASTNodeList* params, ASTNodeList* body,
                         const char* callconv) {

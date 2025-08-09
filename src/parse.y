@@ -21,6 +21,7 @@
 %token <str> T_CDECL T_STDCALL T_FASTCALL T_THISCALL T_VECTORCALL
 %token T_AMPERSAND T_DOT T_ASSIGN T_COMMA T_COLON T_QUOTE T_DQUOTE T_SEMI T_LPAREN T_RPAREN T_LBRACE T_RBRACE T_LBRACKET T_RBRACKET
 %token T_PLUS T_MINUS T_MUL T_DIV
+%token T_IF
 
 %type <str> callconv
 %type <nodelist> functions param_list expr_list stmts
@@ -80,6 +81,7 @@ stmt:
 	| T_CON type T_COLON T_ID T_ASSIGN expr T_SEMI { $$ = create_con_decl_node($2, $4, $6, (strstr($2->u.type, "u") != NULL) ? 1 : 0); free($4); }
 	| T_ID T_ASSIGN expr T_SEMI { $$ = create_assign_node($1, $3); free($1); }
 	| T_RETURN expr T_SEMI { $$ = create_return_node($2); }
+	| T_IF T_LPAREN expr T_RPAREN T_LBRACE stmts T_RBRACE { $$ = create_if_node($3, $6); }
 	;
 
 expr:
@@ -95,6 +97,13 @@ expr:
 	| T_AMPERSAND T_ID { $$ = create_address_of_node($2); }
 	| T_ID T_DOT T_MUL { $$ = create_dereference_node($1); }
 	| array_literal { $$ = $1; }
+
+	| expr T_EQ expr { $$ = create_eq_node($1, $3); }
+	| expr T_NE expr { $$ = create_ne_node($1, $3); }
+	| expr T_LT expr { $$ = create_lt_node($1, $3); }
+	| expr T_LE expr { $$ = create_le_node($1, $3); }
+	| expr T_GT expr { $$ = create_gt_node($1, $3); }
+	| expr T_GE expr { $$ = create_ge_node($1, $3); }
 	;
 
 array_literal:

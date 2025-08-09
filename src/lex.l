@@ -13,6 +13,8 @@
 "thiscall" { yylval.str = strdup(yytext); return T_THISCALL; }
 "vectorcall" { yylval.str = strdup(yytext); return T_VECTORCALL; }
 
+"if" return T_IF;
+
 "void" { yylval.str = strdup(yytext); return T_TYPE; }
 i[0-9]+ { yylval.str = strdup(yytext); return T_TYPE; }
 u[0-9]+ { yylval.str = strdup(yytext); return T_TYPE; }
@@ -41,6 +43,13 @@ u[0-9]+ { yylval.str = strdup(yytext); return T_TYPE; }
 "}" return T_RBRACE;
 "[" return T_LBRACKET;
 "]" return T_RBRACKET;
+
+"==" return T_EQ;
+"!=" return T_NE;
+"<" return T_LT;
+"<=" return T_LE;
+">" return T_GT;
+">=" return T_GE;
 
 [ \t\n]+ ;
 . return yytext[0];

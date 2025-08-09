@@ -9,6 +9,15 @@ typedef enum {
     AST_ARRAY_TYPE,
     AST_PTR_TYPE,
 
+    AST_EQ,
+    AST_NE,
+    AST_LT,
+    AST_LE,
+    AST_GT,
+    AST_GE,
+
+    AST_IF,
+
     AST_FN,
     AST_FN_CALL,
 
@@ -48,6 +57,15 @@ typedef struct ASTNode {
         struct {
             struct ASTNode* base_type;
         } ptrtype;
+
+        struct {
+            struct ASTNode *lhs, *rhs;
+        } comp;
+
+        struct {
+            struct ASTNode* cond;
+            ASTNodeList* body;
+        } ifstmt;
 
         struct {
             struct ASTNode* rettype;
@@ -106,6 +124,15 @@ ASTNode* create_float_node(float f);
 ASTNode* create_type_node(const char* type);
 ASTNode* create_array_type_node(ASTNode* base_type, int size);
 ASTNode* create_ptr_type_node(ASTNode* base_type);
+
+ASTNode* create_eq_node(ASTNode* lhs, ASTNode* rhs);
+ASTNode* create_ne_node(ASTNode* lhs, ASTNode* rhs);
+ASTNode* create_lt_node(ASTNode* lhs, ASTNode* rhs);
+ASTNode* create_le_node(ASTNode* lhs, ASTNode* rhs);
+ASTNode* create_gt_node(ASTNode* lhs, ASTNode* rhs);
+ASTNode* create_ge_node(ASTNode* lhs, ASTNode* rhs);
+
+ASTNode* create_if_node(ASTNode* cond, ASTNodeList* body);
 
 ASTNode* create_fn_node(ASTNode* ret_type, const char* name,
                         ASTNodeList* params, ASTNodeList* body,
