@@ -150,6 +150,10 @@ LLVMValueRef autocast(LLVMValueRef value, LLVMTypeRef from, LLVMTypeRef to) {
 
 LLVMValueRef codegen_expr(ASTNode* e) {
     switch (e->kind) {
+        case AST_NULL: {
+            LLVMTypeRef ptr_type = LLVMPointerType(int8_type, 0);
+            return LLVMConstNull(ptr_type);
+        }
         case AST_INT: {
             return LLVMConstInt(int32_type, e->u.intval, 0);
         }
@@ -157,6 +161,9 @@ LLVMValueRef codegen_expr(ASTNode* e) {
             return LLVMConstReal(float_type, e->u.floatval);
         }
         case AST_FN: {
+            break;
+        }
+        case AST_EXTERN_FN: {
             break;
         }
         case AST_FN_CALL: {
@@ -176,6 +183,12 @@ LLVMValueRef codegen_expr(ASTNode* e) {
             LLVMValueRef* args = malloc(sizeof(LLVMValueRef) * arg_count);
             for (int i = 0; i < arg_count; i++) {
                 args[i] = codegen_expr(e->u.call.args->nodes[i]);
+            }
+            if (LLVMGetTypeKind(LLVMGetReturnType(callee->type)) ==
+                LLVMVoidTypeKind) {
+                LLVMBuildCall2(builder, callee->type, callee->value, args,
+                               arg_count, "");
+                return NULL;
             }
             LLVMValueRef result =
                 LLVMBuildCall2(builder, callee->type, callee->value, args,
@@ -298,11 +311,7 @@ LLVMValueRef codegen_expr(ASTNode* e) {
                 exit(1);
             }
             LLVMTypeRef outtype = NULL;
-            if (!var->base_type) {
-                outtype = var->type;
-            } else {
-                outtype = var->base_type;
-            }
+            outtype = var->type;
             return LLVMBuildLoad2(builder, outtype, var->value, e->u.varname);
         }
         case AST_ADDRESS_OF: {
@@ -323,6 +332,25 @@ LLVMValueRef codegen_expr(ASTNode* e) {
             LLVMValueRef init =
                 LLVMBuildLoad2(builder, var->type, var->value, "preref");
             return LLVMBuildLoad2(builder, var->base_type, init, "deref");
+        }
+        case AST_STRING_LITERAL: {
+            size_t len = strlen(e->u.stringval) + 1;
+            LLVMTypeRef array_ty = LLVMArrayType(int8_type, len);
+
+            static int str_count = 0;
+            char global_name[32];
+            sprintf(global_name, ".str.%d", str_count++);
+
+            LLVMValueRef global = LLVMAddGlobal(mod, array_ty, global_name);
+            LLVMSetInitializer(global, LLVMConstStringInContext(
+                                           ctx, e->u.stringval, len - 1, 0));
+            LLVMSetGlobalConstant(global, 0);
+            LLVMSetLinkage(global, LLVMPrivateLinkage);
+
+            LLVMValueRef zero = LLVMConstInt(int32_type, 0, 1);
+            LLVMValueRef indices[] = {zero, zero};
+            return LLVMBuildInBoundsGEP2(builder, array_ty, global, indices, 2,
+                                         "strptr");
         }
         case AST_ARRAY_LITERAL: {
             int n = e->u.arraylit.elements->count;
@@ -426,6 +454,41 @@ LLVMValueRef declare_func(ASTNode* fn) {
     return function;
 }
 
+LLVMValueRef declare_extern_func(ASTNode* fn) {
+    int param_count = fn->u.externfn.params->count;
+
+    LLVMTypeRef* param_types = malloc(sizeof(LLVMTypeRef) * param_count);
+    for (int i = 0; i < param_count; i++) {
+        ValueType* decl_type =
+            handleType(fn->u.externfn.params->nodes[i]->u.vardecl.type);
+        param_types[i] = decl_type->type;
+    }
+
+    ValueType* retvaltype = handleType(fn->u.externfn.rettype);
+    LLVMTypeRef decl_type = retvaltype->type;
+
+    LLVMTypeRef func_type =
+        LLVMFunctionType(decl_type, param_types, param_count, 0);
+
+    LLVMValueRef function =
+        LLVMAddFunction(mod, fn->u.externfn.name, func_type);
+    if (strcmp(fn->u.externfn.callconv, "cdecl") == 0) {
+        LLVMSetFunctionCallConv(function, LLVMCCallConv);
+    } else if (strcmp(fn->u.externfn.callconv, "fastcall") == 0) {
+        LLVMSetFunctionCallConv(function, LLVMFastCallConv);
+    }
+
+    ValueType* valtype = malloc(sizeof(ValueType));
+    valtype->value = function;
+    valtype->type = func_type;
+    valtype->base_type = retvaltype->base_type;
+    valtype->is_signed = 0;
+
+    symbol_put(fn->u.externfn.name, valtype);
+    free(param_types);
+    return function;
+}
+
 void codegen_func_body(ASTNode* fn) {
     ValueType* fnval = symbol_get(fn->u.fn.name);
     if (!fnval) {
@@ -461,7 +524,7 @@ void codegen_func_body(ASTNode* fn) {
     }
 
     if (LLVMGetBasicBlockTerminator(LLVMGetInsertBlock(builder)) == NULL) {
-        LLVMBuildRet(builder, LLVMConstInt(int32_type, 0, 0));
+        LLVMBuildRetVoid(builder);
     }
 }
 
@@ -469,6 +532,9 @@ void codegen(ASTNodeList* functions) {
     for (int i = 0; i < functions->count; i++) {
         if (functions->nodes[i]->kind == AST_FN) {
             declare_func(functions->nodes[i]);
+        }
+        if (functions->nodes[i]->kind == AST_EXTERN_FN) {
+            declare_extern_func(functions->nodes[i]);
         }
     }
 

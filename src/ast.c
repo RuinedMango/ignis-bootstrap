@@ -29,6 +29,10 @@ static ASTNode* new_node(ASTKind kind) {
     return n;
 }
 
+ASTNode* create_null_node() {
+    ASTNode* n = new_node(AST_NULL);
+    return n;
+}
 ASTNode* create_int_node(int v) {
     ASTNode* n = new_node(AST_INT);
     n->u.intval = v;
@@ -119,6 +123,19 @@ ASTNode* create_fn_node(ASTNode* ret_type, const char* name,
     memcpy(n->u.fn.callconv, callconv, len);
     return n;
 }
+ASTNode* create_extern_fn_node(ASTNode* ret_type, const char* name,
+                               ASTNodeList* params, const char* callconv) {
+    ASTNode* n = new_node(AST_EXTERN_FN);
+    n->u.externfn.rettype = ret_type;
+    size_t len = strlen(name) + 1;
+    n->u.externfn.name = malloc(len);
+    memcpy(n->u.externfn.name, name, len);
+    n->u.externfn.params = params;
+    len = strlen(callconv) + 1;
+    n->u.externfn.callconv = malloc(len);
+    memcpy(n->u.externfn.callconv, callconv, len);
+    return n;
+}
 ASTNode* create_fn_call_node(const char* name, ASTNodeList* args) {
     ASTNode* n = new_node(AST_FN_CALL);
     size_t len = strlen(name) + 1;
@@ -199,6 +216,13 @@ ASTNode* create_dereference_node(const char* id) {
     return n;
 }
 
+ASTNode* create_string_literal_node(const char* str) {
+    ASTNode* n = new_node(AST_STRING_LITERAL);
+    size_t len = strlen(str) + 1;
+    n->u.stringval = malloc(len);
+    memcpy(n->u.stringval, str, len);
+    return n;
+}
 ASTNode* create_array_literal_node(ASTNodeList* elements) {
     ASTNode* n = new_node(AST_ARRAY_LITERAL);
     n->u.arraylit.elements = elements;

@@ -2,6 +2,7 @@
 #define AST_H
 
 typedef enum {
+    AST_NULL,
     AST_INT,
     AST_FLOAT,
 
@@ -19,6 +20,7 @@ typedef enum {
     AST_IF,
 
     AST_FN,
+    AST_EXTERN_FN,
     AST_FN_CALL,
     AST_BLOCK,
 
@@ -33,6 +35,7 @@ typedef enum {
     AST_ADDRESS_OF,
     AST_DEREFERENCE,
 
+    AST_STRING_LITERAL,
     AST_ARRAY_LITERAL,
     AST_ARRAY_INDEX
 } ASTKind;
@@ -77,6 +80,12 @@ typedef struct ASTNode {
             char* callconv;
         } fn;
         struct {
+            struct ASTNode* rettype;
+            char* name;
+            ASTNodeList* params;
+            char* callconv;
+        } externfn;
+        struct {
             char* name;
             ASTNodeList* args;
         } call;
@@ -109,6 +118,7 @@ typedef struct ASTNode {
             char* id;
         } dereference;
 
+        char* stringval;
         struct {
             ASTNodeList* elements;
         } arraylit;
@@ -123,6 +133,7 @@ ASTNodeList* create_node_list();
 void node_list_add(ASTNodeList* list, ASTNode* node);
 void free_node_list(ASTNodeList* list);
 
+ASTNode* create_null_node();
 ASTNode* create_int_node(int v);
 ASTNode* create_float_node(float f);
 
@@ -142,6 +153,8 @@ ASTNode* create_if_node(ASTNode* cond, ASTNode* then_body, ASTNode* else_body);
 ASTNode* create_fn_node(ASTNode* ret_type, const char* name,
                         ASTNodeList* params, ASTNodeList* body,
                         const char* callconv);
+ASTNode* create_extern_fn_node(ASTNode* ret_type, const char* name,
+                               ASTNodeList* params, const char* callconv);
 ASTNode* create_fn_call_node(const char* name, ASTNodeList* args);
 ASTNode* create_block_node(ASTNodeList* stmts);
 
@@ -158,6 +171,7 @@ ASTNode* create_id_node(const char* name);
 ASTNode* create_address_of_node(const char* id);
 ASTNode* create_dereference_node(const char* id);
 
+ASTNode* create_string_literal_node(const char* str);
 ASTNode* create_array_literal_node(ASTNodeList* elements);
 ASTNode* create_array_index_node(ASTNode* array, ASTNode* index);
 

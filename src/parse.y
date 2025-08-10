@@ -13,11 +13,13 @@
 	struct ASTNodeList *nodelist;
 }
 
+%token T_NULL
 %token <intval> T_INT
 %token <floatval> T_FLOAT
 %token <str> T_ID T_TYPE
+%token <str> T_STRING
 
-%token T_FN T_VAR T_CON T_RETURN
+%token T_FN T_EXTERN T_VAR T_CON T_RETURN
 %token <str> T_CDECL T_STDCALL T_FASTCALL T_THISCALL T_VECTORCALL
 %token T_AMPERSAND T_DOT T_ASSIGN T_COMMA T_COLON T_QUOTE T_DQUOTE T_SEMI T_LPAREN T_RPAREN T_LBRACE T_RBRACE T_LBRACKET T_RBRACKET
 %token T_PLUS T_MINUS T_MUL T_DIV
@@ -25,6 +27,7 @@
 %token T_IF T_ELSE
 
 %type <str> callconv
+%type <node> func_call
 %type <nodelist> functions param_list expr_list stmts
 %type <node> program function param stmt expr type array_literal
 %type <node> other_stmt matched_stmt unmatched_stmt
@@ -50,7 +53,13 @@ functions:
 function:
 		T_FN type T_COLON T_ID T_LPAREN param_list T_RPAREN T_LBRACE stmts T_RBRACE { $$ = create_fn_node($2, $4, $6, $9, "cdecl"); free($4); }
 		| T_FN type T_COLON T_ID T_LPAREN param_list T_RPAREN callconv T_LBRACE stmts T_RBRACE { $$ = create_fn_node($2, $4, $6, $10, $8); free($4); }
+		| T_EXTERN T_FN type T_COLON T_ID T_LPAREN param_list T_RPAREN T_SEMI { $$ = create_extern_fn_node($3, $5, $7, "cdecl"); free($5); }
+		| T_EXTERN T_FN type T_COLON T_ID T_LPAREN param_list T_RPAREN callconv T_SEMI { $$ = create_extern_fn_node($3, $5, $7, $9); free($5); }
 		;
+
+func_call:
+		 T_ID T_LPAREN expr_list T_RPAREN { $$ = create_fn_call_node($1, $3); }
+		 ;
 
 callconv:
 		T_CDECL { $$ = $1; }
@@ -90,6 +99,7 @@ other_stmt:
 	      | T_CON type T_COLON T_ID T_ASSIGN expr T_SEMI { $$ = create_con_decl_node($2, $4, $6, (strstr($2->u.type, "u") != NULL) ? 1 : 0); free($4); }
 		  | T_ID T_ASSIGN expr T_SEMI { $$ = create_assign_node($1, $3); free($1); }
 		  | T_RETURN expr T_SEMI { $$ = create_return_node($2); }
+		  | func_call T_SEMI { $$ = $1; }
 		  | T_LBRACE stmts T_RBRACE { $$ = create_block_node($2); }
 		  ;
 
@@ -101,19 +111,22 @@ matched_stmt:
 unmatched_stmt:
 			  T_IF T_LPAREN expr T_RPAREN stmt { $$ = create_if_node($3, $5, NULL); }
 			  | T_IF T_LPAREN expr T_RPAREN matched_stmt T_ELSE unmatched_stmt { $$ = create_if_node($3, $5, $7); }
+			  ;
 
 expr:
-	T_INT { $$ = create_int_node($1); }
+	T_NULL { $$ = create_null_node(); }
+	| T_INT { $$ = create_int_node($1); }
 	| T_FLOAT { $$ = create_float_node($1); }
 	| T_ID { $$ = create_id_node($1); }
 	| expr T_PLUS expr { $$ = create_binop_node('+', $1, $3); }
 	| expr T_MINUS expr { $$ = create_binop_node('-', $1, $3); }
 	| expr T_MUL expr { $$ = create_binop_node('*', $1, $3); }
 	| expr T_DIV expr { $$ = create_binop_node('/', $1, $3); }
-	| T_ID T_LPAREN expr_list T_RPAREN { $$ = create_fn_call_node($1, $3); }
 	| expr T_LBRACKET expr T_RBRACKET { $$ = create_array_index_node($1, $3); }
 	| T_AMPERSAND T_ID { $$ = create_address_of_node($2); }
 	| T_ID T_DOT T_MUL { $$ = create_dereference_node($1); }
+	| func_call { $$ = $1; }
+	| T_STRING { $$ = create_string_literal_node($1); }
 	| array_literal { $$ = $1; }
 
 	| expr T_EQ expr { $$ = create_eq_node($1, $3); }

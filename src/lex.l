@@ -4,6 +4,7 @@
 
 %%
 "fn" return T_FN;
+"extern" return T_EXTERN;
 "var" return T_VAR;
 "con" return T_CON;
 "return" return T_RETURN;
@@ -16,6 +17,7 @@
 "if" return T_IF;
 "else" return T_ELSE;
 
+"null" return T_NULL;
 "void" { yylval.str = strdup(yytext); return T_TYPE; }
 i[0-9]+ { yylval.str = strdup(yytext); return T_TYPE; }
 u[0-9]+ { yylval.str = strdup(yytext); return T_TYPE; }
@@ -23,6 +25,7 @@ u[0-9]+ { yylval.str = strdup(yytext); return T_TYPE; }
 [0-9]+\.[0-9]+ { yylval.floatval = strtof(yytext, NULL); return T_FLOAT; }
 [0-9]+ { yylval.intval = strtol(yytext, NULL, 10); return T_INT; }
 [a-zA-Z_][a-zA-Z0-9_]* { yylval.str = strdup(yytext); return T_ID; }
+\"([^\\\"]|\\.)*\" { yylval.str = strdup(yytext + 1); yylval.str[strlen(yylval.str) - 1] = '\0'; return T_STRING; }
 
 "+" return T_PLUS;
 "-" return T_MINUS;
