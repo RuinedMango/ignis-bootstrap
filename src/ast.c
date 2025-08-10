@@ -96,10 +96,11 @@ ASTNode* create_ge_node(ASTNode* lhs, ASTNode* rhs) {
     return n;
 }
 
-ASTNode* create_if_node(ASTNode* cond, ASTNodeList* body) {
+ASTNode* create_if_node(ASTNode* cond, ASTNode* then_body, ASTNode* else_body) {
     ASTNode* n = new_node(AST_IF);
     n->u.ifstmt.cond = cond;
-    n->u.ifstmt.body = body;
+    n->u.ifstmt.then_body = then_body;
+    n->u.ifstmt.else_body = else_body;
     return n;
 }
 
@@ -124,6 +125,11 @@ ASTNode* create_fn_call_node(const char* name, ASTNodeList* args) {
     n->u.call.name = malloc(len);
     memcpy(n->u.call.name, name, len);
     n->u.call.args = args;
+    return n;
+}
+ASTNode* create_block_node(ASTNodeList* stmts) {
+    ASTNode* n = new_node(AST_BLOCK);
+    n->u.block.stmts = stmts;
     return n;
 }
 

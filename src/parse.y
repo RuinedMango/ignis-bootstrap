@@ -22,12 +22,15 @@
 %token T_AMPERSAND T_DOT T_ASSIGN T_COMMA T_COLON T_QUOTE T_DQUOTE T_SEMI T_LPAREN T_RPAREN T_LBRACE T_RBRACE T_LBRACKET T_RBRACKET
 %token T_PLUS T_MINUS T_MUL T_DIV
 %token T_EQ T_NE T_LT T_LE T_GT T_GE
-%token T_IF
+%token T_IF T_ELSE
 
 %type <str> callconv
 %type <nodelist> functions param_list expr_list stmts
 %type <node> program function param stmt expr type array_literal
+%type <node> other_stmt matched_stmt unmatched_stmt
 
+%left T_EQ T_NE
+%nonassoc T_LT T_LE T_GT T_GE
 %left T_PLUS T_MINUS
 %left T_MUL T_DIV
 
@@ -78,12 +81,26 @@ stmts:
 	 ;
 
 stmt:
-	T_VAR type T_COLON T_ID T_ASSIGN expr T_SEMI { $$ = create_var_decl_node($2, $4, $6, (strstr($2->u.type, "u") != NULL) ? 1 : 0); free($4); }
-	| T_CON type T_COLON T_ID T_ASSIGN expr T_SEMI { $$ = create_con_decl_node($2, $4, $6, (strstr($2->u.type, "u") != NULL) ? 1 : 0); free($4); }
-	| T_ID T_ASSIGN expr T_SEMI { $$ = create_assign_node($1, $3); free($1); }
-	| T_RETURN expr T_SEMI { $$ = create_return_node($2); }
-	| T_IF T_LPAREN expr T_RPAREN T_LBRACE stmts T_RBRACE { $$ = create_if_node($3, $6); }
+	matched_stmt
+	| unmatched_stmt
 	;
+
+other_stmt:
+          T_VAR type T_COLON T_ID T_ASSIGN expr T_SEMI { $$ = create_var_decl_node($2, $4, $6, (strstr($2->u.type, "u") != NULL) ? 1 : 0); free($4); }
+	      | T_CON type T_COLON T_ID T_ASSIGN expr T_SEMI { $$ = create_con_decl_node($2, $4, $6, (strstr($2->u.type, "u") != NULL) ? 1 : 0); free($4); }
+		  | T_ID T_ASSIGN expr T_SEMI { $$ = create_assign_node($1, $3); free($1); }
+		  | T_RETURN expr T_SEMI { $$ = create_return_node($2); }
+		  | T_LBRACE stmts T_RBRACE { $$ = create_block_node($2); }
+		  ;
+
+matched_stmt:
+			other_stmt
+			| T_IF T_LPAREN expr T_RPAREN matched_stmt T_ELSE matched_stmt { $$ = create_if_node($3, $5, $7); }
+			;
+
+unmatched_stmt:
+			  T_IF T_LPAREN expr T_RPAREN stmt { $$ = create_if_node($3, $5, NULL); }
+			  | T_IF T_LPAREN expr T_RPAREN matched_stmt T_ELSE unmatched_stmt { $$ = create_if_node($3, $5, $7); }
 
 expr:
 	T_INT { $$ = create_int_node($1); }

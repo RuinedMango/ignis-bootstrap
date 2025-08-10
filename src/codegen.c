@@ -183,6 +183,13 @@ LLVMValueRef codegen_expr(ASTNode* e) {
             free(args);
             return result;
         }
+        case AST_BLOCK: {
+            for (int i = 0; i < e->u.block.stmts->count; i++) {
+                codegen_expr(e->u.block.stmts->nodes[i]);
+            }
+
+            return NULL;
+        }
         case AST_RETURN: {
             LLVMValueRef retval = codegen_expr(e->u.retval);
             return LLVMBuildRet(builder, retval);
@@ -219,17 +226,31 @@ LLVMValueRef codegen_expr(ASTNode* e) {
 
             LLVMBasicBlockRef then_bb =
                 LLVMAppendBasicBlockInContext(ctx, cur_fn, "if.then");
+            LLVMBasicBlockRef else_bb =
+                e->u.ifstmt.else_body
+                    ? LLVMAppendBasicBlockInContext(ctx, cur_fn, "if.else")
+                    : NULL;
             LLVMBasicBlockRef merge_bb =
                 LLVMAppendBasicBlockInContext(ctx, cur_fn, "if.end");
 
-            LLVMBuildCondBr(builder, condv, then_bb, merge_bb);
+            if (else_bb) {
+                LLVMBuildCondBr(builder, condv, then_bb, else_bb);
+            } else {
+                LLVMBuildCondBr(builder, condv, then_bb, merge_bb);
+            }
 
             LLVMPositionBuilderAtEnd(builder, then_bb);
-            for (int i = 0; i < e->u.ifstmt.body->count; i++) {
-                codegen_expr(e->u.ifstmt.body->nodes[i]);
-            }
+            codegen_expr(e->u.ifstmt.then_body);
             if (!LLVMGetBasicBlockTerminator(LLVMGetInsertBlock(builder))) {
                 LLVMBuildBr(builder, merge_bb);
+            }
+
+            if (else_bb) {
+                LLVMPositionBuilderAtEnd(builder, else_bb);
+                codegen_expr(e->u.ifstmt.else_body);
+                if (!LLVMGetBasicBlockTerminator(LLVMGetInsertBlock(builder))) {
+                    LLVMBuildBr(builder, merge_bb);
+                }
             }
 
             LLVMPositionBuilderAtEnd(builder, merge_bb);

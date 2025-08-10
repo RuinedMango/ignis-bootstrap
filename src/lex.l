@@ -14,6 +14,7 @@
 "vectorcall" { yylval.str = strdup(yytext); return T_VECTORCALL; }
 
 "if" return T_IF;
+"else" return T_ELSE;
 
 "void" { yylval.str = strdup(yytext); return T_TYPE; }
 i[0-9]+ { yylval.str = strdup(yytext); return T_TYPE; }
