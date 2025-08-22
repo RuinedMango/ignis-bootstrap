@@ -104,6 +104,8 @@ LLVMTypeRef typeSwatch(char* type) {
         return int64_type;
     } else if (strcmp(type, "float") == 0) {
         return float_type;
+    } else if (strcmp(type, "*opaqueptr")) {
+        return LLVMPointerType(int8_type, 0);
     }
     return NULL;
 }

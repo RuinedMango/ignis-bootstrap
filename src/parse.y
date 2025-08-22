@@ -24,12 +24,13 @@
 %token T_AMPERSAND T_DOT T_ASSIGN T_COMMA T_COLON T_QUOTE T_DQUOTE T_SEMI T_LPAREN T_RPAREN T_LBRACE T_RBRACE T_LBRACKET T_RBRACKET
 %token T_PLUS T_MINUS T_MUL T_DIV
 %token T_EQ T_NE T_LT T_LE T_GT T_GE
-%token T_IF T_ELSE
+%token T_IF T_ELSE T_STRUCT
 
 %type <str> callconv
 %type <node> func_call
 %type <nodelist> functions param_list expr_list stmts
 %type <node> program function param stmt expr type array_literal
+%type <node> struct_decl struct_members
 %type <node> other_stmt matched_stmt unmatched_stmt
 
 %left T_EQ T_NE
@@ -48,6 +49,7 @@ program:
 functions:
 		 function { $$ = create_node_list(); node_list_add($$, $1); }
 		 | functions function { node_list_add($1, $2); $$ = $1; }
+		 | functions struct_decl { node_list_add($1, $2); $$ = $1; }
 		 ;
 
 function:
@@ -56,6 +58,15 @@ function:
 		| T_EXTERN T_FN type T_COLON T_ID T_LPAREN param_list T_RPAREN T_SEMI { $$ = create_extern_fn_node($3, $5, $7, "cdecl"); free($5); }
 		| T_EXTERN T_FN type T_COLON T_ID T_LPAREN param_list T_RPAREN callconv T_SEMI { $$ = create_extern_fn_node($3, $5, $7, $9); free($5); }
 		;
+
+struct_decl:
+		   T_STRUCT T_ID T_LBRACE struct_members T_RBRACE { $$ = create_struct_def_node($2, $4); free($2); }
+		   ;
+
+struct_members:
+			  { $$ = create_node_list(); }
+			  | struct_members type T_COLON T_ID T_SEMI { ASTNode* fld }
+			  ;
 
 func_call:
 		 T_ID T_LPAREN expr_list T_RPAREN { $$ = create_fn_call_node($1, $3); }

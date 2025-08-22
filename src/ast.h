@@ -10,6 +10,9 @@ typedef enum {
     AST_ARRAY_TYPE,
     AST_PTR_TYPE,
 
+    AST_STRUCT_DEF,
+    AST_FIELD_ACCESS,
+
     AST_EQ,
     AST_NE,
     AST_LT,
@@ -61,6 +64,15 @@ typedef struct ASTNode {
         struct {
             struct ASTNode* base_type;
         } ptrtype;
+
+        struct {
+            char* name;
+            ASTNodeList* fields;
+        } structdef;
+        struct {
+            struct ASTNode* left;
+            char* field;
+        } fieldaccess;
 
         struct {
             struct ASTNode *lhs, *rhs;
@@ -140,6 +152,9 @@ ASTNode* create_float_node(float f);
 ASTNode* create_type_node(const char* type);
 ASTNode* create_array_type_node(ASTNode* base_type, int size);
 ASTNode* create_ptr_type_node(ASTNode* base_type);
+
+ASTNode* create_struct_def_node(const char* name, ASTNodeList* fields);
+ASTNode* create_field_access_node(ASTNode* left, const char* field);
 
 ASTNode* create_eq_node(ASTNode* lhs, ASTNode* rhs);
 ASTNode* create_ne_node(ASTNode* lhs, ASTNode* rhs);

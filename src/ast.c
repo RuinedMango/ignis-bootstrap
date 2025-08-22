@@ -63,6 +63,23 @@ ASTNode* create_ptr_type_node(ASTNode* base_type) {
     return n;
 }
 
+ASTNode* create_struct_def_node(const char* name, ASTNodeList* fields) {
+    ASTNode* n = new_node(AST_STRUCT_DEF);
+    size_t len = strlen(name) + 1;
+    n->u.structdef.name = malloc(len);
+    memcpy(n->u.structdef.name, name, len);
+    n->u.structdef.fields = fields;
+    return n;
+}
+ASTNode* create_field_access_node(ASTNode* left, const char* field) {
+    ASTNode* n = new_node(AST_FIELD_ACCESS);
+    n->u.fieldaccess.left = left;
+    size_t len = strlen(field) + 1;
+    n->u.fieldaccess.field = malloc(len);
+    memcpy(n->u.fieldaccess.field, field, len);
+    return n;
+}
+
 ASTNode* create_eq_node(ASTNode* lhs, ASTNode* rhs) {
     ASTNode* n = new_node(AST_EQ);
     n->u.comp.lhs = lhs;

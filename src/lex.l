@@ -19,6 +19,8 @@
 
 "null" return T_NULL;
 "void" { yylval.str = strdup(yytext); return T_TYPE; }
+"opaqueptr" { yylval.str = strdup(yytext); return T_TYPE; }
+"struct" return T_STRUCT;
 i[0-9]+ { yylval.str = strdup(yytext); return T_TYPE; }
 u[0-9]+ { yylval.str = strdup(yytext); return T_TYPE; }
 
