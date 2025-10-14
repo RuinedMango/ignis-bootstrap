@@ -65,7 +65,13 @@ struct_decl:
 
 struct_members:
 			  { $$ = create_node_list(); }
-			  | struct_members type T_COLON T_ID T_SEMI { ASTNode* fld }
+			  | struct_members type T_COLON T_ID T_SEMI
+			  {
+			  	ASTNode* fld = create_var_decl_node($2, $4, NULL, (strstr($1->u.type, "u") != NULL) ? 1 : 0);
+				node_list_add($1, fld);
+				$$ = $1;
+				free($4);
+			  }
 			  ;
 
 func_call:
@@ -136,6 +142,7 @@ expr:
 	| expr T_LBRACKET expr T_RBRACKET { $$ = create_array_index_node($1, $3); }
 	| T_AMPERSAND T_ID { $$ = create_address_of_node($2); }
 	| T_ID T_DOT T_MUL { $$ = create_dereference_node($1); }
+	| expr T_DOT T_ID { $$ = create_  }
 	| func_call { $$ = $1; }
 	| T_STRING { $$ = create_string_literal_node($1); }
 	| array_literal { $$ = $1; }
