@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ast.h"
+
+int yylex();
+void yyerror(const char *s);
 %}
 
 %union {
@@ -60,7 +63,7 @@ function:
 		;
 
 struct_decl:
-		   T_STRUCT T_ID T_LBRACE struct_members T_RBRACE { $$ = create_struct_def_node($2, $4); free($2); }
+		   //T_STRUCT T_ID T_LBRACE struct_members T_RBRACE { $$ = create_struct_def_node($2, $4); free($2); }
 		   ;
 
 struct_members:
@@ -142,7 +145,7 @@ expr:
 	| expr T_LBRACKET expr T_RBRACKET { $$ = create_array_index_node($1, $3); }
 	| T_AMPERSAND T_ID { $$ = create_address_of_node($2); }
 	| T_ID T_DOT T_MUL { $$ = create_dereference_node($1); }
-	| expr T_DOT T_ID { $$ = create_  }
+	//| expr T_DOT T_ID { $$ = create_  }
 	| func_call { $$ = $1; }
 	| T_STRING { $$ = create_string_literal_node($1); }
 	| array_literal { $$ = $1; }
