@@ -35,6 +35,9 @@ pub const Lexer = struct {
     pub fn cur(self: *Lexer) u8 {
         return self.src[self.pos];
     }
+    pub fn npeek(self: *Lexer, n: u16) u8 {
+        return self.src[self.pos + n];
+    }
     pub fn peek(self: *Lexer) u8 {
         return self.src[self.pos + 1];
     }
@@ -62,7 +65,7 @@ const LState = enum {
     BLOCK_COMMENT,
 };
 
-const Token = struct {
+pub const Token = struct {
     type: TType,
     data: TData,
     col: u32,
@@ -78,31 +81,7 @@ const TData = union(enum) {
     chr: u8,
 };
 
-const TType = enum {
-    COMMENT,
-    IDENT,
-    KEYWORD,
-    INT,
-    STRING,
-    ASSIGN,
-    PLUS,
-    MINUS,
-    MUL,
-    DIV,
-    OCTO,
-    BANG,
-    LPAREN,
-    RPAREN,
-    LBRACE,
-    RBRACE,
-    LBRACK,
-    RBRACK,
-    COMMA,
-    COLON,
-    SEMI,
-    EOF,
-    UNKNOWN,
-};
+const TType = enum { COMMENT, IDENT, KEYWORD, INT, FLOAT, STRING, ASSIGN, PLUS, MINUS, MUL, DIV, MOD, OCTO, BANG, DOT, ARROW, GRTHAN, LSTHAN, LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK, COMMA, COLON, SEMI, EOF, UNKNOWN, FN, WHILE, FOR, IF, STRUCT, RETURN, NULL, VOID };
 
 fn printToken(tkn: *Token) void {
     std.log.info("{s} (line: {d} col: {d}):", .{ @tagName(tkn.type), tkn.line, tkn.col });
@@ -128,7 +107,10 @@ fn lexFile(lexer: *Lexer, io: Io, alloc: Allocator, file: Io.File) !void {
     _ = try file.readPositionalAll(io, lexer.src, 0);
 
     var token_start: u64 = 0;
-    var number_acc: i64 = 0;
+    var int_acc: i64 = 0;
+    var frac_acc: f64 = 0;
+    var frac_div: f64 = 0;
+    var float_mode: bool = false;
 
     var state = LState.START;
 
@@ -147,7 +129,8 @@ fn lexFile(lexer: *Lexer, io: Io, alloc: Allocator, file: Io.File) !void {
                     lexer.advance();
                 } else if (std.ascii.isDigit(c)) {
                     token_start = lexer.pos;
-                    number_acc = (c - '0');
+                    int_acc = (c - '0');
+                    frac_acc = @floatFromInt(c - '0');
                     state = LState.NUMBER;
                     lexer.advance();
                 } else if (c == '"') {
@@ -157,6 +140,11 @@ fn lexFile(lexer: *Lexer, io: Io, alloc: Allocator, file: Io.File) !void {
                 } else if (c == '/' and lexer.peek() == '/') {
                     token_start = lexer.pos;
                     state = LState.LINE_COMMENT;
+                    lexer.advance();
+                    lexer.advance();
+                } else if (c == '-' and lexer.peek() == '>') {
+                    token_start = lexer.pos;
+                    lexer.addToken(TType.ARROW, TData{ .str = @constCast("->") }, token_start, 2, alloc);
                     lexer.advance();
                     lexer.advance();
                 } else {
@@ -178,12 +166,28 @@ fn lexFile(lexer: *Lexer, io: Io, alloc: Allocator, file: Io.File) !void {
                             lexer.addToken(TType.DIV, TData{ .chr = '/' }, token_start, 1, alloc);
                             lexer.advance();
                         },
+                        '%' => {
+                            lexer.addToken(TType.MOD, TData{ .chr = '%' }, token_start, 1, alloc);
+                            lexer.advance();
+                        },
                         '#' => {
                             lexer.addToken(TType.OCTO, TData{ .chr = '#' }, token_start, 1, alloc);
                             lexer.advance();
                         },
                         '!' => {
                             lexer.addToken(TType.BANG, TData{ .chr = '!' }, token_start, 1, alloc);
+                            lexer.advance();
+                        },
+                        '.' => {
+                            lexer.addToken(TType.DOT, TData{ .chr = '.' }, token_start, 1, alloc);
+                            lexer.advance();
+                        },
+                        '>' => {
+                            lexer.addToken(TType.GRTHAN, TData{ .chr = '>' }, token_start, 1, alloc);
+                            lexer.advance();
+                        },
+                        '<' => {
+                            lexer.addToken(TType.LSTHAN, TData{ .chr = '<' }, token_start, 1, alloc);
                             lexer.advance();
                         },
                         '(' => {
@@ -238,20 +242,47 @@ fn lexFile(lexer: *Lexer, io: Io, alloc: Allocator, file: Io.File) !void {
                     lexer.advance();
                 } else {
                     const len: u32 = @intCast(lexer.pos - token_start);
-                    lexer.addToken(TType.IDENT, TData{ .str = lexer.src[token_start..lexer.pos] }, token_start, len, alloc);
+                    addKeyword(lexer, lexer.src[token_start..lexer.pos], token_start, len, alloc);
                     state = LState.START;
                 }
             },
             LState.NUMBER => {
                 if (std.ascii.isDigit(c)) {
-                    number_acc = number_acc * 10 + (c - '0');
+                    if (float_mode) {
+                        frac_acc += @as(f64, @floatFromInt(c - '0')) / frac_div;
+                        frac_div *= 10.0;
+                    } else {
+                        int_acc = int_acc * 10 + (c - '0');
+                    }
                     lexer.advance();
+                } else if (c == '.') {
+                    const next = lexer.npeek(1);
+                    if (std.ascii.isDigit(next)) {
+                        float_mode = true;
+                        frac_acc = 0.0;
+                        frac_div = 10.0;
+                        lexer.advance();
+                    } else {
+                        const len: u32 = @intCast(lexer.pos - token_start);
+                        lexer.addToken(TType.INT, TData{ .int = int_acc }, token_start, len, alloc);
+                        state = LState.START;
+                        float_mode = false;
+                        int_acc = 0;
+                    }
                 } else {
                     const len: u32 = @intCast(lexer.pos - token_start);
-                    lexer.addToken(TType.INT, TData{ .int = number_acc }, token_start, len, alloc);
+                    if (float_mode) {
+                        const value: f64 = @as(f64, @floatFromInt(int_acc)) + frac_acc;
+                        lexer.addToken(TType.FLOAT, TData{ .flt = value }, token_start, len, alloc);
+                    } else {
+                        lexer.addToken(TType.INT, TData{ .int = int_acc }, token_start, len, alloc);
+                    }
                     state = LState.START;
+                    float_mode = false;
+                    int_acc = 0;
                 }
             },
+
             LState.STRING => {
                 if (c == '\\') {
                     state = LState.STRING_ESC;
@@ -303,7 +334,7 @@ fn lexFile(lexer: *Lexer, io: Io, alloc: Allocator, file: Io.File) !void {
         if (state == LState.IDENT) {
             lexer.addToken(TType.IDENT, TData{ .str = lexer.src[token_start..lexer.pos] }, token_start, len, alloc);
         } else if (state == LState.NUMBER) {
-            lexer.addToken(TType.INT, TData{ .int = number_acc }, token_start, len, alloc);
+            lexer.addToken(TType.INT, TData{ .int = int_acc }, token_start, len, alloc);
         } else if (state == LState.LINE_COMMENT) {
             lexer.addToken(TType.COMMENT, TData{ .str = lexer.src[token_start..lexer.pos] }, token_start, len, alloc);
         }
@@ -312,4 +343,26 @@ fn lexFile(lexer: *Lexer, io: Io, alloc: Allocator, file: Io.File) !void {
     }
 
     lexer.addToken(TType.EOF, undefined, token_start, 1, alloc);
+}
+
+fn addKeyword(lexer: *Lexer, ident: []u8, token_start: u64, len: u32, alloc: Allocator) void {
+    var ttype: TType = TType.IDENT;
+    if (std.mem.eql(u8, ident, "fn")) {
+        ttype = TType.FN;
+    } else if (std.mem.eql(u8, ident, "for")) {
+        ttype = TType.FOR;
+    } else if (std.mem.eql(u8, ident, "while")) {
+        ttype = TType.WHILE;
+    } else if (std.mem.eql(u8, ident, "if")) {
+        ttype = TType.IF;
+    } else if (std.mem.eql(u8, ident, "struct")) {
+        ttype = TType.STRUCT;
+    } else if (std.mem.eql(u8, ident, "return")) {
+        ttype = TType.RETURN;
+    } else if (std.mem.eql(u8, ident, "null")) {
+        ttype = TType.NULL;
+    } else if (std.mem.eql(u8, ident, "void")) {
+        ttype = TType.VOID;
+    }
+    lexer.addToken(ttype, TData{ .str = ident }, token_start, len, alloc);
 }

@@ -18,6 +18,23 @@
                 "source": false
               },
               "icon": "lucide-file",
+<<<<<<< HEAD
+=======
+              "title": "Types"
+            }
+          },
+          {
+            "id": "cc1288e393634cc2",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Type System/Structural Types.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+>>>>>>> 24e43f9af391894f4dc63cf92cbb89fd6469e0cd
               "title": "Structural Types"
             }
           }
@@ -85,26 +102,16 @@
     "type": "split",
     "children": [
       {
-        "id": "918b8da0a93bef3e",
+        "id": "d329392055f9649d",
         "type": "tabs",
         "children": [
           {
-            "id": "d4826cefdec91bae",
-            "type": "leaf",
-            "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
-            }
-          },
-          {
-            "id": "9a1f276fec97d00b",
+            "id": "070d90c0cae764d1",
             "type": "leaf",
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Compiler/Syntax.md",
+                "file": "Control Flow Statements/branch statements.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -114,25 +121,25 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Syntax"
+              "title": "Backlinks for branch statements"
             }
           },
           {
-            "id": "54adfac4faa5d1a3",
+            "id": "49126f40079faa17",
             "type": "leaf",
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Compiler/Syntax.md",
+                "file": "Control Flow Statements/branch statements.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Syntax"
+              "title": "Outgoing links from branch statements"
             }
           },
           {
-            "id": "c0e883beb367835b",
+            "id": "639b962fa9e2c043",
             "type": "leaf",
             "state": {
               "type": "tag",
@@ -147,25 +154,26 @@
             }
           },
           {
-            "id": "be5e3c7bd7a8487d",
+            "id": "66b5f4cd1e7d6201",
             "type": "leaf",
             "state": {
               "type": "outline",
               "state": {
-                "file": "Compiler/Syntax.md",
+                "file": "Control Flow Statements/branch statements.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Syntax"
+              "title": "Outline of branch statements"
             }
           }
         ]
       }
     ],
     "direction": "horizontal",
-    "width": 693.5
+    "width": 200,
+    "collapsed": true
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -178,8 +186,12 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "d4826cefdec91bae",
+  "active": "40500e331545c357",
   "lastOpenFiles": [
+<<<<<<< HEAD
+=======
+    "Control Flow Statements/branch statements.md",
+>>>>>>> 24e43f9af391894f4dc63cf92cbb89fd6469e0cd
     "Type System/Structural Types.md",
     "Type System/Types.md",
     "Comptime/Comptime Contracts.md",

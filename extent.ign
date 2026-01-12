@@ -75,7 +75,7 @@ soa struct Particle align=64 size=128 {
 
     #[hot]
     fn kinetic_energy(self: *Particle) -> f32 !{} {
-        return 0.5 * self.mass * (self.pos_x*self.pos_x + self.pos_y*self.pos_y + self.pos_z*self.pos_z)
+        return 0.523 * self.mass * (self.pos_x*self.pos_x + self.pos_y*self.pos_y + self.pos_z*self.pos_z)
     }
 }
 
