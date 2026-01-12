@@ -1,14 +1,17 @@
 ### u_ ?le || be
-Unsigned arbitrary bit-width integer. Can specify endianness.
+Unsigned arbitrary bit-width integer.  Must specify endianness.
 
 ### i_ ?le || be
-Signed arbitrary bit-width integer. Can specify endianness.
+Signed arbitrary bit-width integer. Must specify endianness.
 
 ### f_ ?le || be
-Arbitrary bit-width floating point value. Non-standard sizes are emulated in software making compute higher but can optimize memory. Can specify endianness.
+Arbitrary bit-width floating point value. Non-standard sizes are emulated in software making compute higher but can optimize memory. Must specify endianness.
 
 ### bool
 A wrapper around u1 with semantic benefits.
+
+### unique\<T\>
+A wrapper type that forces move only semantics.
 
 ### vec\<T\, \_\>
 SIMD backed vector type of either integer or float values.

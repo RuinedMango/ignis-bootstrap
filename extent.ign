@@ -1,0 +1,230 @@
+// ====================================================
+// StratoFerro Uber Example with AnyError
+// ====================================================
+
+// ---------------------------------------------------
+// Define error sets
+error FileErrors {
+    IOError
+    EmptyFile
+    BadFormat
+}
+
+error ChunkErrors {
+    AllocationFail
+}
+
+// ---------------------------------------------------
+// POD Vec3 with inline methods
+pod struct Vec3 align=16 size=16 {
+    x: f32 offset=0
+    y: f32 offset=4
+    z: f32 offset=8
+    pad 4
+
+    #[hot]
+    fn add(self: *Vec3, other: *Vec3) -> Vec3 !{} {
+        return Vec3 { x: self.x + other.x, y: self.y + other.y, z: self.z + other.z, pad: 0 }
+    }
+
+    #[hot]
+    fn scale(self: *Vec3, factor: f32) -> Vec3 !{} {
+        return Vec3 { x: self.x * factor, y: self.y * factor, z: self.z * factor, pad: 0 }
+    }
+}
+
+// ---------------------------------------------------
+// Unique FileBuf
+unique struct FileBuf align=8 size=24 {
+    ptr: *u8 offset=0
+    len: usize offset=8
+    alloc: *Allocator offset=16
+
+    fn dtor(self: move FileBuf) !{alloc} {
+        if self.ptr != null { self.alloc.free(self.ptr) }
+    }
+
+    fn first_half(self: move FileBuf, n: usize) -> unique FileBuf !{alloc} {
+        assert(n <= self.len)
+        let part = unique FileBuf { ptr: self.ptr, len: n, alloc: self.alloc }
+        return move part
+    }
+
+    fn second_half(self: move FileBuf, n: usize) -> unique FileBuf !{alloc} {
+        assert(n <= self.len)
+        let part = unique FileBuf { ptr: self.ptr + n, len: self.len - n, alloc: self.alloc }
+        return move part
+    }
+}
+
+// ---------------------------------------------------
+// SoA Particle
+soa struct Particle align=64 size=128 {
+    pos_x: f32 align=32 offset=0
+    pos_y: f32 align=32 offset=32
+    pos_z: f32 align=32 offset=64
+    mass: f32 offset=96
+    pad 28
+
+    #[hot]
+    fn apply_force(self: *Particle, fx: f32, fy: f32, fz: f32, dt: f32) -> void !{} {
+        self.pos_x += fx * dt
+        self.pos_y += fy * dt
+        self.pos_z += fz * dt
+    }
+
+    #[hot]
+    fn kinetic_energy(self: *Particle) -> f32 !{} {
+        return 0.5 * self.mass * (self.pos_x*self.pos_x + self.pos_y*self.pos_y + self.pos_z*self.pos_z)
+    }
+}
+
+// ---------------------------------------------------
+// Capsule Chunk
+capsule struct Chunk align=64 size=32 {
+    ptr: *u8 offset=0
+    len: usize offset=8
+    alloc: *Allocator offset=16
+    pad 8
+
+    fn dtor(self: move Chunk) !{alloc} {
+        if self.ptr != null { self.alloc.free(self.ptr) }
+    }
+
+    fn slice_first_half(self: move Chunk) -> unique Chunk !{alloc} {
+        assert(self.len % 2 == 0)
+        let half_len = self.len / 2
+        let sub = unique Chunk { ptr: self.ptr, len: half_len, alloc: self.alloc, pad: 0 }
+        return move sub
+    }
+
+    fn slice_second_half(self: move Chunk) -> unique Chunk !{alloc} {
+        assert(self.len % 2 == 0)
+        let half_len = self.len / 2
+        let sub = unique Chunk { ptr: self.ptr + half_len, len: half_len, alloc: self.alloc, pad: 0 }
+        return move sub
+    }
+}
+
+// ---------------------------------------------------
+// DMA-safe buffer
+pod struct DMABuffer align=64 size=4096 {
+    ptr: *u8 offset=0
+    pad 56
+}
+
+// ---------------------------------------------------
+// Inline hot-path SIMD function
+#[hot]
+@codegen(contract="inline,simd")
+fn fast_mul(a: f32, b: f32) -> f32 !{} {
+    return a * b
+}
+
+// ---------------------------------------------------
+// Inline assembly
+#[hot]
+fn rdtsc() -> u64 !{} {
+    let lo: u32
+    let hi: u32
+
+    asm(
+        out lo <- eax,
+        out hi <- edx,
+        clobber=[ecx, ebx],
+        options=[pure, no_mem, nosync, deterministic]
+    ) { "rdtsc" }
+
+    return ((hi as u64) << 32) | (lo as u64)
+}
+
+// ---------------------------------------------------
+// Syscalls
+fn syscall_read(fd: i32, ptr: *u8, len: i32) -> i64 !{syscall} {
+    return syscall(SYS_read, fd, ptr, len)
+}
+
+fn syscall(num: i64, a: i64, b: i64, c: i64) -> i64 !{syscall} { return 0 }
+
+// ---------------------------------------------------
+// Zig-like anyerror read
+fn read_file(fd: i32, alloc: *Allocator) -> usize | anyerror(FileErrors) !{syscall, alloc} {
+    let buf = alloc.alloc(8192, align=64)
+    defer alloc.free(buf)
+
+    let n = syscall_read(fd, buf, 8192)
+    if n <= 0 { return anyerror(FileErrors.IOError) }
+    return n as usize
+}
+
+// ---------------------------------------------------
+// Workers with move-only queue
+fn worker(q: spsc<unique<FileBuf>>) -> void {
+    loop {
+        match q.recv_poll() {
+            Some(job) => process_file(move job),
+            None => cpu_relax()
+        }
+    }
+}
+
+fn worker_shared(q: mpmc<unique<Chunk>>) -> void !{block, sync} {
+    while true {
+        let maybe = q.recv_blocking()
+        match maybe {
+            Some(ch) => process_chunk(move ch),
+            None => break
+        }
+    }
+}
+
+// ---------------------------------------------------
+// Produce jobs
+fn produce_jobs(sys_alloc: *Allocator, core0_q: spsc<unique<FileBuf>>, shared_q: mpmc<unique<Chunk>>) -> void {
+    let tbuf = sys_alloc.alloc(128, align=16)
+    let job = unique FileBuf { ptr: tbuf, len: 128usize, alloc: sys_alloc }
+    core0_q.send(move job)
+
+    let mem = sys_alloc.alloc(4096, align=64)
+    let ch = capsule Chunk { ptr: mem, len: 4096usize, alloc: sys_alloc, pad: 0 }
+    shared_q.send(move ch)
+}
+
+// ---------------------------------------------------
+// Main entry
+export fn main() -> i32 {
+    let sys_alloc: *Allocator = SystemAllocator()
+    init_runtime(sys_alloc)
+
+    let core0_q = spsc::<unique<FileBuf>>(capacity=1024, allocator=per_core_arena(0))
+    let shared_q = mpmc::<unique<Chunk>>(capacity=4096, allocator=sys_alloc)
+
+    spawn core=0, stack=8192 fn worker(core0_q)
+    spawn core=1, stack=8192 fn worker_shared(shared_q)
+
+    produce_jobs(sys_alloc, core0_q, shared_q)
+
+    // Example Zig-like anyerror usage
+    let result = read_file(0, sys_alloc)
+    match result {
+        n => println("Read bytes: ", n),
+        err => match err {
+            IOError => println("IO error!"),
+            EmptyFile => println("Empty file!"),
+            BadFormat => println("Bad format!")
+        }
+    }
+
+    shutdown_runtime()
+    return 0
+}
+
+// ---------------------------------------------------
+// Helpers
+fn process_file(f: unique<FileBuf>) -> void { cpu_relax() }
+fn process_chunk(ch: unique<Chunk>) -> void { cpu_relax() }
+fn SystemAllocator() -> *Allocator { return null }
+fn init_runtime(alloc: *Allocator) -> void {}
+fn shutdown_runtime() -> void {}
+fn cpu_relax() -> void {}
+fn println(msg: []const u8, n: usize) -> void {}
