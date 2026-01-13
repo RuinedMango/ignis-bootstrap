@@ -17,9 +17,9 @@ pub fn main(init: std.process.Init) !void {
 
     const file = try std.Io.Dir.cwd().openFile(io, args[1], .{ .mode = .read_write });
 
-    try lexer.lex(io, arena, file);
+    try lexer.loadFile(io, arena, file);
 
-    try lexer.printTokens(arena);
+    try lexer.printToken(&lexer.lexOne());
 }
 
 test "simple test" {
