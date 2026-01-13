@@ -9,6 +9,8 @@ pub const Lexer = struct {
     col: u32,
 
     peeked: ?Token,
+
+    // Load and Unload
     pub fn init() !Lexer {
         return Lexer{ .src = "", .pos = 0, .line = 1, .col = 1, .peeked = null };
     }
@@ -21,17 +23,14 @@ pub const Lexer = struct {
         alloc.free(self.src);
     }
 
-    pub fn makeToken(self: *Lexer, ttype: TType, data: TData, start: u64, len: u32) Token {
-        return .{ .type = ttype, .data = data, .col = self.col, .line = self.line, .start = start, .len = len };
-    }
-
+    // Self src adjacent
     pub fn cur(self: *Lexer) u8 {
         return self.src[self.pos];
     }
-    pub fn npeek(self: *Lexer, n: u16) u8 {
+    pub fn byteNPeek(self: *Lexer, n: u16) u8 {
         return self.src[self.pos + n];
     }
-    pub fn peek(self: *Lexer) u8 {
+    pub fn bytePeek(self: *Lexer) u8 {
         return self.src[self.pos + 1];
     }
     pub fn advance(self: *Lexer) void {
@@ -46,7 +45,10 @@ pub const Lexer = struct {
     pub fn isEof(self: *Lexer) bool {
         return self.pos >= self.src.len;
     }
-    pub fn printToken(tkn: *Token) void {
+
+    // Token manipulation
+    pub fn printToken(self: *Lexer, tkn: Token) void {
+        _ = self;
         std.log.info("{s} (line: {d} col: {d}):", .{ @tagName(tkn.type), tkn.line, tkn.col });
         switch (tkn.data) {
             .chr => {
@@ -62,6 +64,29 @@ pub const Lexer = struct {
                 std.log.info("  [str {s}]", .{tkn.data.str});
             },
         }
+    }
+    pub fn makeToken(self: *Lexer, ttype: TType, data: TData, start: u64, len: u32) Token {
+        return .{ .type = ttype, .data = data, .col = self.col, .line = self.line, .start = start, .len = len };
+    }
+
+    // Core lex functions
+    pub fn next(self: *Lexer) Token {
+        if (self.peeked) {
+            const t = self.peeked.?;
+            self.peeked = null;
+            return t;
+        }
+
+        return self.lexOne();
+    }
+    pub fn peek(self: *Lexer) Token {
+        if (self.peeked) return self.peeked.?;
+        const t = self.lexOne();
+        self.peeked = t;
+        return t;
+    }
+    pub fn unget(self: *Lexer, t: Token) void {
+        self.peeked = t;
     }
     pub fn lexOne(self: *Lexer) Token {
         if (self.isEof()) {
@@ -97,12 +122,12 @@ pub const Lexer = struct {
                         token_start = self.pos;
                         state = LState.STRING;
                         self.advance();
-                    } else if (c == '/' and self.peek() == '/') {
+                    } else if (c == '/' and self.bytePeek() == '/') {
                         token_start = self.pos;
                         state = LState.LINE_COMMENT;
                         self.advance();
                         self.advance();
-                    } else if (c == '-' and self.peek() == '>') {
+                    } else if (c == '-' and self.bytePeek() == '>') {
                         token_start = self.pos;
                         const tok = self.makeToken(TType.ARROW, TData{ .str = @constCast("->") }, token_start, 2);
                         self.advance();
@@ -239,8 +264,8 @@ pub const Lexer = struct {
                         }
                         self.advance();
                     } else if (c == '.') {
-                        const next = self.npeek(1);
-                        if (std.ascii.isDigit(next)) {
+                        const nextByte = self.byteNPeek(1);
+                        if (std.ascii.isDigit(nextByte)) {
                             float_mode = true;
                             frac_acc = 0.0;
                             frac_div = 10.0;
@@ -279,7 +304,7 @@ pub const Lexer = struct {
                         return self.makeToken(TType.STRING, TData{ .str = self.src[token_start..self.pos] }, token_start, len);
                     } else if (self.isEof()) {
                         std.log.err("Unterminated string at {d}:{d}\n", .{ self.line, self.col });
-                        return;
+                        return undefined;
                     } else {
                         self.advance();
                     }
@@ -287,7 +312,7 @@ pub const Lexer = struct {
                 LState.STRING_ESC => {
                     if (self.isEof()) {
                         std.log.err("Unterminated string escape at {d}:{d}\n", .{ self.line, self.col });
-                        return;
+                        return undefined;
                     }
                     self.advance();
                     state = LState.STRING;

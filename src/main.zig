@@ -19,7 +19,10 @@ pub fn main(init: std.process.Init) !void {
 
     try lexer.loadFile(io, arena, file);
 
-    try lexer.printToken(&lexer.lexOne());
+    for (1..1000) |_| {
+        const tkn = lexer.lexOne();
+        lexer.printToken(tkn);
+    }
 }
 
 test "simple test" {
