@@ -12,6 +12,10 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/parser/root.zig"),
         .target = target,
     });
+    const asg = b.addModule("ignis_arg", .{
+        .root_source_file = b.path("src/asg/root.zig"),
+        .target = target,
+    });
 
     const exe = b.addExecutable(.{
         .name = "ignis_bootstrap",
@@ -22,6 +26,7 @@ pub fn build(b: *std.Build) void {
             .imports = &.{
                 .{ .name = "ignis_lexer", .module = lexer },
                 .{ .name = "ignis_parser", .module = parser },
+                .{ .name = "ignis_asg", .module = asg },
             },
         }),
     });
@@ -45,9 +50,13 @@ pub fn build(b: *std.Build) void {
     const parser_tests = b.addTest(.{
         .root_module = parser,
     });
+    const asg_tests = b.addTest(.{
+        .root_module = asg,
+    });
 
     const run_lexer_tests = b.addRunArtifact(lexer_tests);
     const run_parser_tests = b.addRunArtifact(parser_tests);
+    const run_asg_tests = b.addRunArtifact(asg_tests);
 
     const exe_tests = b.addTest(.{
         .root_module = exe.root_module,
@@ -57,6 +66,7 @@ pub fn build(b: *std.Build) void {
 
     const test_step = b.step("test", "Run tests");
     test_step.dependOn(&run_lexer_tests.step);
+    test_step.dependOn(&run_asg_tests.step);
     test_step.dependOn(&run_parser_tests.step);
     test_step.dependOn(&run_exe_tests.step);
 }
