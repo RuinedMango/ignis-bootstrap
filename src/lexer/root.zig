@@ -89,9 +89,6 @@ pub const Lexer = struct {
         self.peeked = t;
     }
     pub fn lexOne(self: *Lexer) Token {
-        if (self.isEof()) {
-            return self.makeToken(TType.EOF, TData{ .str = @constCast("EOF") }, self.pos, 1);
-        }
         var token_start: u64 = 0;
         var int_acc: i64 = 0;
         var frac_acc: f64 = 0;
@@ -101,6 +98,9 @@ pub const Lexer = struct {
         var state = LState.START;
 
         while (true) {
+            if (self.isEof()) {
+                return self.makeToken(TType.EOF, TData{ .str = @constCast("EOF") }, self.pos, 1);
+            }
             const c: u8 = self.cur();
             switch (state) {
                 LState.START => blk: {
@@ -249,7 +249,7 @@ pub const Lexer = struct {
                         self.advance();
                     } else {
                         const len: u32 = @intCast(self.pos - token_start);
-                        const tok = makeKeyword(self, self.src[token_start..self.pos], token_start, len);
+                        const tok = makeKeywordOrType(self, self.src[token_start..self.pos], token_start, len);
                         state = LState.START;
                         return tok;
                     }
@@ -367,9 +367,9 @@ const TData = union(enum) {
     chr: u8,
 };
 
-pub const TType = enum { COMMENT, IDENT, KEYWORD, INT, FLOAT, STRING, ASSIGN, PLUS, MINUS, MUL, DIV, MOD, OCTO, BANG, DOT, ARROW, GRTHAN, LSTHAN, LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK, COMMA, COLON, SEMI, EOF, UNKNOWN, FN, WHILE, FOR, IF, STRUCT, RETURN, NULL, VOID };
+pub const TType = enum { COMMENT, IDENT, KEYWORD, INT, FLOAT, STRING, ASSIGN, PLUS, MINUS, MUL, DIV, MOD, OCTO, BANG, DOT, ARROW, GRTHAN, LSTHAN, LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK, COMMA, COLON, SEMI, EOF, UNKNOWN, FN, DEF, WHILE, FOR, IF, STRUCT, RETURN, NULL, VOID, TYPE };
 
-fn makeKeyword(lexer: *Lexer, ident: []u8, token_start: u64, len: u32) Token {
+fn makeKeywordOrType(lexer: *Lexer, ident: []u8, token_start: u64, len: u32) Token {
     var ttype: TType = TType.IDENT;
     if (std.mem.eql(u8, ident, "fn")) {
         ttype = TType.FN;
@@ -387,6 +387,47 @@ fn makeKeyword(lexer: *Lexer, ident: []u8, token_start: u64, len: u32) Token {
         ttype = TType.NULL;
     } else if (std.mem.eql(u8, ident, "void")) {
         ttype = TType.VOID;
+    } else if (std.mem.eql(u8, ident, "def")) {
+        ttype = TType.DEF;
+    } else {
+        if (makeType(ident)) |madeType| {
+            ttype = madeType;
+        }
     }
     return lexer.makeToken(ttype, TData{ .str = ident }, token_start, len);
+}
+
+fn makeType(ident: []u8) ?TType {
+    if (std.mem.eql(u8, ident, "opaqueptr")) {
+        return TType.TYPE;
+    } else if (std.mem.eql(u8, ident, "usize")) {
+        return TType.TYPE;
+    }
+
+    if (ident.len >= 2) {
+        const prefix = ident[0];
+        const suffix = ident[1..];
+
+        // integer types i8, i16, i32, i64
+        if (prefix == 'i') {
+            if ((std.fmt.parseInt(u32, suffix, 10) catch null) != null) {
+                return TType.TYPE;
+            }
+        }
+
+        // unsigned types u8, u16, u32, u64
+        if (prefix == 'u') {
+            if ((std.fmt.parseInt(u32, suffix, 10) catch null) != null) {
+                return TType.TYPE;
+            }
+        }
+
+        // float types f32, f64
+        if (prefix == 'f') {
+            if ((std.fmt.parseInt(u32, suffix, 10) catch null) != null) {
+                return TType.TYPE;
+            }
+        }
+    }
+    return null;
 }
