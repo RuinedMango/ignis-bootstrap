@@ -42,7 +42,9 @@ const Parser = struct {
         return self.lexer.next();
     }
 
-    pub fn parseStatement(self: *Parser, alloc: Allocator) void {
+    pub fn parseExpression(slef: *Parser, min_bp: i32) *Expr {}
+
+    pub fn parseStatement(self: *Parser, alloc: Allocator) *Stmt {
         const t = self.lexer.peek();
         if (t.type == lex.TType.DEF) {
             _ = self.lexer.next();
@@ -52,8 +54,7 @@ const Parser = struct {
                 expr = self.parseExpression(0);
             }
             _ = self.expect(lex.TType.SEMI);
-            _ = nameTok;
-            return;
+            return &Stmt{.Def{ .name = nameTok.data.str, .init = expr }};
         } else if (t.type == lex.TType.RETURN) {
             _ = self.lexer.next();
             var expr: *Expr = undefined;
@@ -63,7 +64,7 @@ const Parser = struct {
                 expr = null;
             }
             _ = self.expect(lex.TType.SEMI);
-            return;
+            return &Stmt{.Return{ .expr = expr }};
         } else if (t.type == lex.TType.IF) {
             _ = self.lexer.next();
             _ = self.expect(lex.TType.LPAREN);
@@ -72,16 +73,15 @@ const Parser = struct {
             const then_st = self.parseStatement();
             var else_st: ?*Stmt = null;
             if (self.accept(lex.TType.ELSE)) else_st = self.parseStatement();
-            _ = cond;
-            _ = then_st;
-            return;
+            return &Stmt{.If{ .cond = cond, .then_branch = then_st, .else_branch = else_st }};
         } else if (t.type == lex.TType.LBRACE) {
             _ = self.lexer.next();
             var vec: std.ArrayList(*Stmt) = .empty;
-            var n: usize = 0;
             while (self.lexer.peek().type != lex.TType.RBRACE or self.lexer.peek().type != lex.TType.EOF) {
                 vec.append(alloc, self.parseStatement(alloc));
             }
+            const slice = vec.toOwnedSlice(alloc);
+            return &Stmt{.Block{ .stmts = slice }};
         }
     }
 
@@ -94,3 +94,5 @@ const Parser = struct {
         return try out.toOwnedSlice(alloc);
     }
 };
+
+fn printStmt(stmt: *Stmt) void {}
