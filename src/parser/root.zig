@@ -14,7 +14,7 @@ const Stmt = union(StmtKind) {
     If: struct { cond: *Expr, then_branch: *Stmt, else_branch: ?*Stmt },
     While: struct { cond: *Expr, body: *Stmt },
     Block: struct { stmts: []*Stmt },
-    Fn: struct {stmts: []*Stmt},
+    Fn: struct { stmts: []*Stmt },
 };
 
 const Parser = struct {
@@ -42,7 +42,7 @@ const Parser = struct {
         return self.lexer.next();
     }
 
-    pub fn parseStatement(self: *Parser) void {
+    pub fn parseStatement(self: *Parser, alloc: Allocator) void {
         const t = self.lexer.peek();
         if (t.type == lex.TType.DEF) {
             _ = self.lexer.next();
@@ -75,17 +75,22 @@ const Parser = struct {
             _ = cond;
             _ = then_st;
             return;
-        } else if(t.type == lex.TType.LBRACE) {
+        } else if (t.type == lex.TType.LBRACE) {
             _ = self.lexer.next();
-            var vec: []*Stmt = &[_]*Stmt{};
+            var vec: std.ArrayList(*Stmt) = .empty;
             var n: usize = 0;
-            while(self.lexer.peek()){
-                
+            while (self.lexer.peek().type != lex.TType.RBRACE or self.lexer.peek().type != lex.TType.EOF) {
+                vec.append(alloc, self.parseStatement(alloc));
             }
         }
     }
 
-    pub fn parseProgram(self: *Parser) []*Stmt {
-        var out
+    pub fn parseProgram(self: *Parser, alloc: Allocator) ![]*Stmt {
+        var out: std.ArrayList(*Stmt) = .empty;
+        defer out.deinit(alloc);
+        while (self.lexer.peek().type != lex.TType.EOF) {
+            out.append(alloc, self.parseStatement(alloc));
+        }
+        return try out.toOwnedSlice(alloc);
     }
 };
