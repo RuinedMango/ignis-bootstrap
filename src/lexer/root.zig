@@ -367,7 +367,7 @@ const TData = union(enum) {
     chr: u8,
 };
 
-pub const TType = enum { COMMENT, IDENT, KEYWORD, INT, FLOAT, STRING, ASSIGN, PLUS, MINUS, MUL, DIV, MOD, OCTO, BANG, DOT, ARROW, GRTHAN, LSTHAN, LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK, COMMA, COLON, SEMI, EOF, UNKNOWN, FN, DEF, WHILE, FOR, IF, STRUCT, RETURN, NULL, VOID, TYPE };
+pub const TType = enum { COMMENT, IDENT, KEYWORD, INT, FLOAT, STRING, ASSIGN, PLUS, MINUS, MUL, DIV, MOD, OCTO, BANG, DOT, ARROW, GRTHAN, LSTHAN, LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK, COMMA, COLON, SEMI, EOF, UNKNOWN, FN, DEF, EXTERN, WHILE, FOR, IF, STRUCT, RETURN, NULL, VOID, TYPE };
 
 fn makeKeywordOrType(lexer: *Lexer, ident: []u8, token_start: u64, len: u32) Token {
     var ttype: TType = TType.IDENT;
@@ -389,6 +389,8 @@ fn makeKeywordOrType(lexer: *Lexer, ident: []u8, token_start: u64, len: u32) Tok
         ttype = TType.VOID;
     } else if (std.mem.eql(u8, ident, "def")) {
         ttype = TType.DEF;
+    } else if (std.mem.eql(u8, ident, "extern")) {
+        ttype = TType.EXTERN;
     } else {
         if (makeType(ident)) |madeType| {
             ttype = madeType;

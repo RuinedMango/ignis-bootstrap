@@ -6,15 +6,19 @@ const lex = @import("ignis_lexer");
 pub const ExprKind = enum { Number, Ident, Unary, Binary, Call };
 pub const Expr = union(ExprKind) { Number: struct { value: f64 }, Ident: struct { slice: []u8 }, Unary: struct { op: lex.TType, rhs: *Expr }, Binary: struct { op: lex.TType, rhs: *Expr, lhs: *Expr } };
 
+pub const TypeKind = enum { Named, Pointer, Array };
+pub const Type = union(TypeKind) { Named: struct { name: []u8 }, Pointer: struct { baseType: *Type }, Array: struct { elemType: *Type, size: ?u32 } };
+
 pub const StmtKind = enum { ExprStmt, Def, Return, If, While, Block, Fn };
-const Stmt = union(StmtKind) {
+pub const Stmt = union(StmtKind) {
     ExprStmt: struct { expr: *Expr },
-    Def: struct { name: []u8, init: ?*Expr },
+    Def: struct { name: []u8, type: []u8, init: ?*Expr },
     Return: struct { expr: ?*Expr },
     If: struct { cond: *Expr, then_branch: *Stmt, else_branch: ?*Stmt },
     While: struct { cond: *Expr, body: *Stmt },
     Block: struct { stmts: []*Stmt },
     Fn: struct { stmts: []*Stmt },
+    Extern: struct { stmt: *Stmt },
 };
 
 const Parser = struct {
@@ -42,19 +46,31 @@ const Parser = struct {
         return self.lexer.next();
     }
 
-    pub fn parseExpression(slef: *Parser, min_bp: i32) *Expr {}
+    pub fn parseExpression(self: *Parser, min_bp: i32) *Expr {
+        _ = self;
+        _ = min_bp;
+        return &Expr{ .Number = 0.0 };
+    }
+
+    //pub fn parseType(self: *Parser, )
 
     pub fn parseStatement(self: *Parser, alloc: Allocator) *Stmt {
         const t = self.lexer.peek();
         if (t.type == lex.TType.DEF) {
             _ = self.lexer.next();
             const nameTok = self.expect(lex.TType.IDENT);
+            _ = self.expect(lex.TType.COLON);
+            const typeTok = self.expect(lex.TType.TYPE);
             var expr: *Expr = undefined;
             if (self.accept(lex.TType.ASSIGN)) {
                 expr = self.parseExpression(0);
             }
             _ = self.expect(lex.TType.SEMI);
-            return &Stmt{.Def{ .name = nameTok.data.str, .init = expr }};
+            return &Stmt{.Def{ .name = nameTok.data.str, .type = typeTok.data.str, .init = expr }};
+        } else if (t.type == lex.TType.EXTERN) {
+            _ = self.lexer.next();
+            const stmt = self.parseStatement(alloc);
+            return &Stmt{.Extern{ .stmt = stmt }};
         } else if (t.type == lex.TType.RETURN) {
             _ = self.lexer.next();
             var expr: *Expr = undefined;
@@ -95,4 +111,4 @@ const Parser = struct {
     }
 };
 
-fn printStmt(stmt: *Stmt) void {}
+pub fn printStmt(stmt: *Stmt) void {}

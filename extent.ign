@@ -11,13 +11,13 @@ extern fn NtWriteFile(
     key: *u32
 ) -> i32 !{syscall}
 
-def STD_OUTPUT_HANDLE: i32 = -11
+def STD_OUTPUT_HANDLE: i32 = -11;
 
 fn main() -> i32 !{syscall} {
-    def handle = GetStdHandle(STD_OUTPUT_HANDLE)
+    def handle: *opaqueptr = GetStdHandle(STD_OUTPUT_HANDLE);
 
-    def msg: [14]u8 = "Hello, Windows\n"
-    def io_status: usize = 0
+    def msg: [14]u8 = "Hello, Windows\n";
+    def io_status: u16 = 0;
 
     NtWriteFile(
         handle,
@@ -29,7 +29,7 @@ fn main() -> i32 !{syscall} {
         msg.len as u32,
         null,
         null
-    )
+    );
 
-    return 0
+    return 0;
 }
