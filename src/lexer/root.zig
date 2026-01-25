@@ -71,7 +71,7 @@ pub const Lexer = struct {
 
     // Core lex functions
     pub fn next(self: *Lexer) Token {
-        if (self.peeked) {
+        if (self.peeked != null) {
             const t = self.peeked.?;
             self.peeked = null;
             return t;
@@ -80,7 +80,7 @@ pub const Lexer = struct {
         return self.lexOne();
     }
     pub fn peek(self: *Lexer) Token {
-        if (self.peeked) return self.peeked.?;
+        if (self.peeked != null) return self.peeked.?;
         const t = self.lexOne();
         self.peeked = t;
         return t;
@@ -367,7 +367,7 @@ const TData = union(enum) {
     chr: u8,
 };
 
-pub const TType = enum { COMMENT, IDENT, KEYWORD, INT, FLOAT, STRING, ASSIGN, PLUS, MINUS, MUL, DIV, MOD, OCTO, BANG, DOT, ARROW, GRTHAN, LSTHAN, LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK, COMMA, COLON, SEMI, EOF, UNKNOWN, FN, DEF, EXTERN, WHILE, FOR, IF, STRUCT, RETURN, NULL, VOID, TYPE };
+pub const TType = enum { COMMENT, IDENT, KEYWORD, INT, FLOAT, STRING, ASSIGN, PLUS, MINUS, MUL, DIV, MOD, OCTO, BANG, DOT, ARROW, GRTHAN, LSTHAN, LPAREN, RPAREN, LBRACE, RBRACE, LBRACK, RBRACK, COMMA, COLON, SEMI, EOF, UNKNOWN, FN, DEF, EXTERN, WHILE, FOR, IF, ELSE, STRUCT, RETURN, NULL, VOID, TYPE };
 
 fn makeKeywordOrType(lexer: *Lexer, ident: []u8, token_start: u64, len: u32) Token {
     var ttype: TType = TType.IDENT;
@@ -379,6 +379,8 @@ fn makeKeywordOrType(lexer: *Lexer, ident: []u8, token_start: u64, len: u32) Tok
         ttype = TType.WHILE;
     } else if (std.mem.eql(u8, ident, "if")) {
         ttype = TType.IF;
+    } else if (std.mem.eql(u8, ident, "else")) {
+        ttype = TType.ELSE;
     } else if (std.mem.eql(u8, ident, "struct")) {
         ttype = TType.STRUCT;
     } else if (std.mem.eql(u8, ident, "return")) {

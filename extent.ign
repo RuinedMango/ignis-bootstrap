@@ -1,4 +1,6 @@
-extern fn GetStdHandle(id: i32) -> *opaqueptr !{syscall}
+extern fn GetStdHandle(id: i32) -> *opaqueptr ![syscall] {
+
+}
 extern fn NtWriteFile(
     file: *opaqueptr,
     event: *opaqueptr,
@@ -9,11 +11,11 @@ extern fn NtWriteFile(
     length: u32,
     offset: *u64,
     key: *u32
-) -> i32 !{syscall}
+) -> i32 ![syscall
 
 def STD_OUTPUT_HANDLE: i32 = -11;
 
-fn main() -> i32 !{syscall} {
+fn main() -> i32 ![syscall] {
     def handle: *opaqueptr = GetStdHandle(STD_OUTPUT_HANDLE);
 
     def msg: [14]u8 = "Hello, Windows\n";

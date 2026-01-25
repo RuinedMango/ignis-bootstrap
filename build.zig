@@ -11,6 +11,9 @@ pub fn build(b: *std.Build) void {
     const parser = b.addModule("ignis_parser", .{
         .root_source_file = b.path("src/parser/root.zig"),
         .target = target,
+        .imports = &.{
+            .{ .name = "ignis_lexer", .module = lexer },
+        },
     });
     const asg = b.addModule("ignis_arg", .{
         .root_source_file = b.path("src/asg/root.zig"),
