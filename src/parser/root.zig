@@ -65,31 +65,33 @@ pub const Parser = struct {
         return type;
     }
 
-    pub fn parseFunctionDecl(self: *Parser, alloc: Allocator, is_extern: bool) !*Stmt{
+    pub fn parseFunctionDecl(self: *Parser, alloc: Allocator, is_extern: bool) !*Stmt {
         const nameTok = self.expect(lex.TType.IDENT);
         _ = self.expect(lex.TType.LPAREN);
 
         var params: std.ArrayList(*Type) = .empty;
         defer params.deinit(alloc);
 
-        if(!self.accept(lex.TType.RPAREN)) {
-            while(true){
+        if (!self.accept(lex.TType.RPAREN)) {
+            while (true) {
                 const p_name = self.expect(lex.TType.IDENT);
-            _ = self.expect(lex.TType.COLON);
+                _ = self.expect(lex.TType.COLON);
                 const p_ty = try self.parseType(alloc);
                 try params.append(alloc, p_ty);
-                if(self.accept(lex.TType.COMMA)) continue;
+                if (self.accept(lex.TType.COMMA)) continue;
                 _ = self.expect(lex.TType.RPAREN);
                 break;
             }
         }
 
         var ret_ty: ?*Type = null;
-        if(self.accept(lex.TType.ARROW)){
+        if (self.accept(lex.TType.ARROW)) {
             ret_ty = try self.parseType(alloc);
         }
 
-
+        const out = alloc.create(Stmt);
+        out.* = Stmt{ .Fn = .{ .name = nameTok, .retType = ret_ty.?, .stmts = null } };
+        return out;
     }
 
     pub fn parseStatement(self: *Parser, alloc: Allocator) !*Stmt {
@@ -115,10 +117,6 @@ pub const Parser = struct {
         } else if (t.type == lex.TType.FN) {
             _ = self.lexer.next();
             const nameTok = self.expect(lex.TType.IDENT);
-            _ = self.expect(lex.TType.LPAREN);
-
-            const out = try alloc.create(Stmt);
-            out.* = Stmt{ .Fn = .{.name = nameTok, .stmts} };
         } else if (t.type == lex.TType.RETURN) {
             _ = self.lexer.next();
             var expr: ?*Expr = undefined;
