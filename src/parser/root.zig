@@ -4,21 +4,35 @@ const Allocator = std.mem.Allocator;
 const lex = @import("ignis_lexer");
 
 pub const ExprKind = enum { Number, Ident, Unary, Binary };
-pub const Expr = union(ExprKind) { Number: struct { value: f64 }, Ident: struct { slice: []u8 }, Unary: struct { op: lex.TType, rhs: *Expr }, Binary: struct { op: lex.TType, rhs: *Expr, lhs: *Expr } };
+pub const Expr = union(ExprKind) {
+    Number: struct { value: f64 },
+    Ident: struct { slice: []u8 },
+    Unary: struct { op: lex.TType, rhs: *Expr },
+    Binary: struct { op: lex.TType, rhs: *Expr, lhs: *Expr },
+    Call: struct{ callee: *Expr, args: []*Expr },
+    Member: struct{ base: *Expr, name: []u8 },
+    Cast: struct{expr: *Expr, to: *Type},
+    AddressOf: struct{expr: *Expr},
+    Null: struct{},
+};
 
 pub const TypeKind = enum { Named, Pointer, Array };
-pub const Type = union(TypeKind) { Named: struct { name: []u8 }, Pointer: struct { baseType: *Type }, Array: struct { elemType: *Type, size: ?u32 } };
+pub const Type = union(TypeKind) {
+    Named: struct { name: []u8 },
+    Pointer: struct { baseType: *Type },
+    Array: struct { elemType: *Type, size: ?u32 },
+};
 
 pub const StmtKind = enum { ExprStmt, Def, Return, If, While, Block, Fn, Extern };
 pub const Stmt = union(StmtKind) {
     ExprStmt: struct { expr: *Expr },
-    Def: struct { name: []u8, type: []u8, init: ?*Expr },
+    Def: struct { name: []u8, typePtr: *Type, init: ?*Expr },
     Return: struct { expr: ?*Expr },
     If: struct { cond: *Expr, then_branch: *Stmt, else_branch: ?*Stmt },
     While: struct { cond: *Expr, body: *Stmt },
     Block: struct { stmts: []*Stmt },
-    Fn: struct { name: []u8, stmts: []*Stmt, retType: *Type },
-    Extern: struct { stmt: *Stmt },
+    Fn: struct { name: []u8, params: [](*Type), ret: ?*Type, stmts: []*Stmt, attrs: [][]u8, is_extern: bool },
+    Extern: struct { inner: *Stmt },
 };
 
 pub const ParseErrors = error{
