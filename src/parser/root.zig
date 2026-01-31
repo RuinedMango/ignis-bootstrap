@@ -9,11 +9,11 @@ pub const Expr = union(ExprKind) {
     Ident: struct { slice: []u8 },
     Unary: struct { op: lex.TType, rhs: *Expr },
     Binary: struct { op: lex.TType, rhs: *Expr, lhs: *Expr },
-    Call: struct{ callee: *Expr, args: []*Expr },
-    Member: struct{ base: *Expr, name: []u8 },
-    Cast: struct{expr: *Expr, to: *Type},
-    AddressOf: struct{expr: *Expr},
-    Null: struct{},
+    Call: struct { callee: *Expr, args: []*Expr },
+    Member: struct { base: *Expr, name: []u8 },
+    Cast: struct { expr: *Expr, to: *Type },
+    AddressOf: struct { expr: *Expr },
+    Null: struct {},
 };
 
 pub const TypeKind = enum { Named, Pointer, Array };
@@ -88,7 +88,7 @@ pub const Parser = struct {
 
         if (!self.accept(lex.TType.RPAREN)) {
             while (true) {
-                const p_name = self.expect(lex.TType.IDENT);
+                _ = self.expect(lex.TType.IDENT);
                 _ = self.expect(lex.TType.COLON);
                 const p_ty = try self.parseType(alloc);
                 try params.append(alloc, p_ty);
@@ -104,7 +104,7 @@ pub const Parser = struct {
         }
 
         const out = alloc.create(Stmt);
-        out.* = Stmt{ .Fn = .{ .name = nameTok, .retType = ret_ty.?, .stmts = null } };
+        out.* = Stmt{ .Fn = .{ .name = nameTok, .retType = ret_ty.?, .stmts = null, .is_extern = is_extern } };
         return out;
     }
 
