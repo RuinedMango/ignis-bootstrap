@@ -31,7 +31,7 @@ pub const Stmt = union(StmtKind) {
     If: struct { cond: *Expr, then_branch: *Stmt, else_branch: ?*Stmt },
     While: struct { cond: *Expr, body: *Stmt },
     Block: struct { stmts: []*Stmt },
-    Fn: struct { name: []u8, params: [](*Type), ret: ?*Type, stmts: []*Stmt, attrs: [][]u8, is_extern: bool },
+    Fn: struct { name: []u8, params: []*Type, ret: ?*Type, stmts: []*Stmt, attrs: [][]u8, is_extern: bool },
     Extern: struct { inner: *Stmt },
 };
 
@@ -73,10 +73,17 @@ pub const Parser = struct {
     }
 
     pub fn parseType(self: *Parser, alloc: Allocator) !*Type {
-        _ = self;
-        const typeOut = try alloc.create(Type);
-        typeOut.* = Type{ .Named = .{ .name = @constCast("U2") } };
-        return type;
+        var prefix_arrays: std.ArrayList(?u32) = .empty;
+        defer prefix_arrays.deinit(alloc);
+
+        while (self.accept(lex.TType.LBRACK)) {
+            if (self.accept(lex.TType.RBRACK)) {
+                try prefix_arrays.append(alloc, null);
+            } else {
+                const nTok = self.expect(lex.TType.INT);
+                try prefix_arrays.append(alloc, @intCast(nTok.data.int));
+            }
+        }
     }
 
     pub fn parseFunctionDecl(self: *Parser, alloc: Allocator, is_extern: bool) !*Stmt {

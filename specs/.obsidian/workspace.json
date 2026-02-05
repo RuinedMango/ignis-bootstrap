@@ -1,41 +1,20 @@
 {
   "main": {
-    "id": "a0f80b8475b05a18",
+    "id": "d16f39db54dd97f4",
     "type": "split",
     "children": [
       {
-        "id": "8af8fc33f2088d40",
+        "id": "428a4dc76a84be89",
         "type": "tabs",
         "children": [
           {
-            "id": "40500e331545c357",
+            "id": "dd92d33683fa8aa4",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Type System/Structural Types.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-<<<<<<< HEAD
-=======
-              "title": "Types"
-            }
-          },
-          {
-            "id": "cc1288e393634cc2",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Type System/Structural Types.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
->>>>>>> 24e43f9af391894f4dc63cf92cbb89fd6469e0cd
-              "title": "Structural Types"
+              "title": "New tab"
             }
           }
         ]
@@ -44,15 +23,15 @@
     "direction": "vertical"
   },
   "left": {
-    "id": "3736cdd408124037",
+    "id": "5ea01447e782385e",
     "type": "split",
     "children": [
       {
-        "id": "3a766bc9d795ad71",
+        "id": "6fea192c48035a3d",
         "type": "tabs",
         "children": [
           {
-            "id": "e15c0fa5f9d62a91",
+            "id": "bcaac78425429606",
             "type": "leaf",
             "state": {
               "type": "file-explorer",
@@ -65,7 +44,7 @@
             }
           },
           {
-            "id": "77c2867e1c3b8f0f",
+            "id": "8f6fce64ab2e9a24",
             "type": "leaf",
             "state": {
               "type": "search",
@@ -82,7 +61,7 @@
             }
           },
           {
-            "id": "4af5949569efa5e9",
+            "id": "c5242327ccf7acb0",
             "type": "leaf",
             "state": {
               "type": "bookmarks",
@@ -98,20 +77,19 @@
     "width": 300
   },
   "right": {
-    "id": "e7a81b9b8cb6bfe8",
+    "id": "a723fc3c12cd39db",
     "type": "split",
     "children": [
       {
-        "id": "d329392055f9649d",
+        "id": "b0034f3597996861",
         "type": "tabs",
         "children": [
           {
-            "id": "070d90c0cae764d1",
+            "id": "32a5ef7e988ebccf",
             "type": "leaf",
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Control Flow Statements/branch statements.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -121,25 +99,24 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for branch statements"
+              "title": "Backlinks"
             }
           },
           {
-            "id": "49126f40079faa17",
+            "id": "a4dfa1e127761ee0",
             "type": "leaf",
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Control Flow Statements/branch statements.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from branch statements"
+              "title": "Outgoing links"
             }
           },
           {
-            "id": "639b962fa9e2c043",
+            "id": "78986ed816ad80bb",
             "type": "leaf",
             "state": {
               "type": "tag",
@@ -154,71 +131,37 @@
             }
           },
           {
-            "id": "66b5f4cd1e7d6201",
+            "id": "24d14e94bfbd81ae",
             "type": "leaf",
             "state": {
               "type": "outline",
               "state": {
-                "file": "Control Flow Statements/branch statements.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of branch statements"
+              "title": "Outline"
             }
           }
         ]
       }
     ],
     "direction": "horizontal",
-    "width": 200,
+    "width": 300,
     "collapsed": true
   },
   "left-ribbon": {
     "hiddenItems": {
-      "bases:Create new base": false,
       "switcher:Open quick switcher": false,
       "graph:Open graph view": false,
       "canvas:Create new canvas": false,
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
-      "command-palette:Open command palette": false
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
     }
   },
-  "active": "40500e331545c357",
-  "lastOpenFiles": [
-<<<<<<< HEAD
-=======
-    "Control Flow Statements/branch statements.md",
->>>>>>> 24e43f9af391894f4dc63cf92cbb89fd6469e0cd
-    "Type System/Structural Types.md",
-    "Type System/Types.md",
-    "Comptime/Comptime Contracts.md",
-    "Compiler/Syntax.md",
-    "Compiler/Compiler Specs.md",
-    "Build/Package Manager.md",
-    "Build/Build System.md",
-    "Assembler/Assembler Specs.md",
-    "Control Flow Statements/branch statements.md",
-    "Control Flow Statements/if.md",
-    "Control Flow Statements/defer.md",
-    "Type System/Type Checking.md",
-    "Control Flow Statements/switch.md",
-    "Control Flow Statements/when.md",
-    "Control Flow Statements/for.md",
-    "Control Flow Statements",
-    "Features.md",
-    "Ignis.md",
-    "Interop/C.md",
-    "Interop",
-    "Type System",
-    "Comptime",
-    "Linker/Linker Specs.md",
-    "Assembler",
-    "Linker",
-    "Compiler",
-    "Build",
-    "Build.md"
-  ]
+  "active": "dd92d33683fa8aa4",
+  "lastOpenFiles": []
 }
