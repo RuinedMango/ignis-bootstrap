@@ -137,7 +137,7 @@ pub const Parser = struct {
             out.* = Stmt{ .Extern = .{ .stmt = stmt } };
         } else if (t.type == lex.TType.FN) {
             _ = self.lexer.next();
-            const nameTok = self.expect(lex.TType.IDENT);
+            return try parseFunctionDecl();
         } else if (t.type == lex.TType.RETURN) {
             _ = self.lexer.next();
             var expr: ?*Expr = undefined;
