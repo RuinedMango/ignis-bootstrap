@@ -3,7 +3,7 @@ const Allocator = std.mem.Allocator;
 
 const lex = @import("ignis_lexer");
 
-pub const ExprKind = enum { Number, Ident, Unary, Binary };
+pub const ExprKind = enum { Number, Ident, Unary, Binary, Call, Member, Cast, AddressOf, Null };
 pub const Expr = union(ExprKind) {
     Number: struct { value: f64 },
     Ident: struct { slice: []u8 },
@@ -64,6 +64,12 @@ pub const Parser = struct {
         return self.lexer.next();
     }
 
+    fn lbp(kind: lex.TType) i32 {
+        return switch (kind) {
+            lex.TType.ARROW => 300,
+        };
+    }
+
     pub fn parseExpression(self: *Parser, min_bp: i32, alloc: Allocator) !*Expr {
         _ = self;
         _ = min_bp;
@@ -82,6 +88,7 @@ pub const Parser = struct {
             } else {
                 const nTok = self.expect(lex.TType.INT);
                 try prefix_arrays.append(alloc, @intCast(nTok.data.int));
+                _ = self.expect(lex.TType.RBRACK);
             }
         }
     }
